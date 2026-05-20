@@ -1,0 +1,117 @@
+<!-- Settings dialog — invoked via :cfg palette command -->
+<div
+  class="overlay"
+  x-show="showConfigDialog"
+  x-cloak
+  id="configDialog"
+  @click.self="showConfigDialog = false"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="overlay-panel" @click.stop>
+    <header class="overlay-header">
+      <span class="overlay-title">Settings</span>
+      <button class="btn is-xs is-ghost" @click="showConfigDialog = false" aria-label="Close">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg>
+      </button>
+    </header>
+
+    <div class="overlay-tabs">
+      <button class="overlay-tab" :class="{'is-active': configTab === 1}" @click="configTab = 1">General</button>
+      <button class="overlay-tab" :class="{'is-active': configTab === 2}" @click="configTab = 2">Filters</button>
+      <button class="overlay-tab" :class="{'is-active': configTab === 3}" @click="configTab = 3">About</button>
+    </div>
+
+    <div class="overlay-body">
+      <!-- General -->
+      <div x-show="configTab === 1">
+        <div class="overlay-field">
+          <label class="overlay-check">
+            <input type="checkbox" x-model="cfg.shortenNames" />
+            <span>Shorten names</span>
+          </label>
+          <div class="overlay-help">Removes hash details from Pod &amp; ReplicaSet names</div>
+        </div>
+        <div class="overlay-field">
+          <label class="overlay-check">
+            <input type="checkbox" x-model="cfg.persistDetailTab" />
+            <span>Persist detail pane active tab</span>
+          </label>
+          <div class="overlay-help">Keep the last-opened tab (info/yaml/events) when switching between resources</div>
+        </div>
+        <div class="overlay-field">
+          <label class="overlay-check">
+            <input type="checkbox" x-model="cfg.persistDetailExpansion" />
+            <span>Persist detail pane expansion</span>
+          </label>
+          <div class="overlay-help">Keep each tab's expanded/collapsed state when switching between resources</div>
+        </div>
+        <div class="overlay-field">
+          <label class="overlay-check">
+            <input type="checkbox" x-model="cfg.debug" />
+            <span>Debug</span>
+          </label>
+          <div class="overlay-help">Extra logging in the console</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div x-show="configTab === 2">
+        <div class="overlay-field">
+          <label>Sidebar resource kinds</label>
+          <div class="overlay-help" style="margin-bottom: 8px">Click to toggle which kinds appear in the sidebar. Cluster-scoped and custom resources are always visible.</div>
+          <div class="overlay-chips">
+            <template x-for="group in filterableGroups()" :key="group.label">
+              <template x-if="true">
+                <div style="display: contents">
+                  <div class="overlay-chip-group-label" x-text="group.label"></div>
+                  <template x-for="kind in group.kinds" :key="kind">
+                    <button
+                      class="btn is-toggle is-xs"
+                      :class="{'is-active': !(cfg.hiddenKinds || []).includes(kind)}"
+                      @click="toggleKindVisibility(kind)"
+                      x-text="kind"
+                    ></button>
+                  </template>
+                </div>
+              </template>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div x-show="configTab === 3">
+        <div class="overlay-field">
+          <label>Kubernetes cluster</label>
+          <div>
+            Endpoint:
+            <button
+              type="button"
+              class="text-copy"
+              x-text="serviceMetadata.clusterHost"
+              @click="_copyToClipboard(serviceMetadata.clusterHost, 'Endpoint copied')"
+              title="Click to copy"
+            ></button>
+          </div>
+        </div>
+        <div class="overlay-field">
+          <label>Version</label>
+          <div x-text="`${serviceMetadata.version} (${serviceMetadata.buildInfo})`"></div>
+        </div>
+        <div class="overlay-field">
+          <label>Project</label>
+          <a class="btn is-xs" href="https://github.com/kubeatlas-org/kubeatlas" target="_blank" rel="noreferrer">
+            <svg class="icon" aria-hidden="true"><use :href="iconAction('github')"></use></svg>
+            <span>github.com/kubeatlas-org/kubeatlas</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <footer class="overlay-footer">
+      <button class="btn is-xs" @click="showConfigDialog = false">Cancel</button>
+      <button class="btn is-xs is-success" @click="configDialogSave()">Save changes</button>
+    </footer>
+  </div>
+</div>

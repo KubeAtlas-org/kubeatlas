@@ -1,0 +1,579 @@
+<!-- Resource table area — top bar (breadcrumb/search/hints) lives in index.html -->
+<div class="resource-table-wrap" x-show="!inLogsView && !inExecView && !inGraphView && !(detailOpen && _detailTableHidden)" x-cloak>
+  <div id="tableContent"></div>
+</div>
+
+<!-- Full-area exec / shell view -->
+<div id="execView" x-show="inExecView" x-cloak>
+  <div id="execViewHeader">
+    <button
+      type="button"
+      class="view-pod-badge"
+      x-show="execRes"
+      x-text="execRes?.metadata?.name"
+      @click="_backToPodDetail()"
+      title="Back to pod detail"
+    ></button>
+    <template x-if="execContainers.length > 1">
+      <select class="logs-container-select" x-model="execContainer" @change="_reconnectExec()">
+        <template x-for="c in execContainers" :key="c">
+          <option :value="c" x-text="c"></option>
+        </template>
+      </select>
+    </template>
+    <span class="exec-label"
+      ><svg class="icon" aria-hidden="true"><use :href="iconAction('terminal')"></use></svg> Shell</span
+    >
+    <button class="btn ml-auto" @click="hideExecView()" title="Close exec session (Esc)">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg> Close
+    </button>
+  </div>
+  <div id="execTerminal"></div>
+</div>
+
+<!-- Full-area logs view -->
+<div id="logsView" x-show="inLogsView" x-cloak>
+  <div id="logsViewHeader">
+    <button
+      type="button"
+      class="view-pod-badge"
+      x-show="logsRes"
+      x-text="logsRes?.metadata?.name"
+      @click="_backToPodDetail()"
+      title="Back to pod detail"
+    ></button>
+    <template x-if="logContainers.length > 1">
+      <select class="logs-container-select" x-model="logContainer" @change="_fetchLogs(logsRes)">
+        <template x-for="c in logContainers" :key="c">
+          <option :value="c" x-text="c"></option>
+        </template>
+      </select>
+    </template>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': logPrevious}"
+      @click="logPrevious = !logPrevious; _fetchLogs(logsRes)"
+      title="Previous container logs"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('history')"></use></svg> Previous
+    </button>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': logTimestamps}"
+      @click="logTimestamps = !logTimestamps; _fetchLogs(logsRes)"
+      title="Show timestamps"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('clock')"></use></svg> Timestamps
+    </button>
+    <div class="logs-search-wrap">
+      <svg class="icon logs-search-icon" aria-hidden="true"><use :href="iconAction('search')"></use></svg>
+      <input class="logs-search" type="text" placeholder="Filter..." x-model.debounce.300="logSearch" />
+      <span class="logs-match-count" x-show="logSearch" x-text="`${logMatchCount} match${logMatchCount !== 1 ? 'es' : ''}`"></span>
+    </div>
+    <button class="btn ml-auto" @click="_copyLogs()" title="Copy to clipboard">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('copy')"></use></svg> Copy
+    </button>
+  </div>
+  <pre id="logsViewContent"></pre>
+</div>
+
+<!-- Full-area graph view -->
+<div id="graphView" x-show="inGraphView" x-cloak>
+  <div id="graphViewHeader">
+    <span class="graph-label"
+      ><svg class="icon" aria-hidden="true"><use :href="iconAction('share-2')"></use></svg> Graph</span
+    >
+    <div class="graph-legend-wrap" @click.outside="graphLegendOpen = false">
+      <button
+        class="btn is-xs is-toggle"
+        :class="{'is-active': graphLegendOpen}"
+        @click="graphLegendOpen = !graphLegendOpen"
+        title="Shape / colour / link legend"
+      >
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('info')"></use></svg> Legend
+      </button>
+      <div class="graph-legend-pop" x-show="graphLegendOpen" x-cloak x-transition.opacity>
+        <div class="graph-legend-col">
+          <div class="graph-legend-head">Shape · kind</div>
+          <span class="graph-legend-row"><span class="lg-shape lg-circle"></span> Pod</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-roundsquare"></span> Deployment · RS · StatefulSet · DaemonSet</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-diamond"></span> Job · CronJob</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-triangle"></span> Service</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-triangle-down"></span> Ingress</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-hexagon"></span> Node (large) · Secret (small)</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-square"></span> ConfigMap</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-cylinder"></span> PV · PVC</span>
+          <span class="graph-legend-row"><span class="lg-shape lg-gauge"></span> HPA</span>
+        </div>
+        <div class="graph-legend-col">
+          <div class="graph-legend-head">Colour · status</div>
+          <span class="graph-legend-row"><span class="lg-dot is-green"></span> Ready / healthy</span>
+          <span class="graph-legend-row"><span class="lg-dot is-yellow"></span> Pending / progressing</span>
+          <span class="graph-legend-row"><span class="lg-dot is-red"></span> Failed / unavailable</span>
+          <span class="graph-legend-row"><span class="lg-dot is-blue"></span> Service / Ingress / CronJob</span>
+          <span class="graph-legend-row"><span class="lg-dot is-grey"></span> Unknown / no status</span>
+          <div class="graph-legend-head">Link · relation</div>
+          <span class="graph-legend-row"><span class="graph-legend-swatch is-owner"></span> owner</span>
+          <span class="graph-legend-row"><span class="graph-legend-swatch is-network"></span> network</span>
+          <span class="graph-legend-row"><span class="graph-legend-swatch is-mount"></span> mount</span>
+          <span class="graph-legend-row"><span class="graph-legend-swatch is-env-ref"></span> env-ref</span>
+        </div>
+      </div>
+    </div>
+    <div class="graph-legend-wrap" @click.outside="graphConfigOpen = false">
+      <button
+        class="btn is-xs is-toggle"
+        :class="{'is-active': graphConfigOpen}"
+        @click="graphConfigOpen = !graphConfigOpen"
+        title="Simulation / layout settings"
+      >
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('server-cog')"></use></svg> Sim
+      </button>
+      <div class="graph-legend-pop graph-config-pop" x-show="graphConfigOpen" x-cloak x-transition.opacity>
+        <div class="graph-legend-col">
+          <div class="graph-legend-head">Forces</div>
+          <template x-for="(meta, key) in graphSimFields" :key="key">
+            <label class="graph-sim-row">
+              <span class="graph-sim-label" x-text="meta[3]"></span>
+              <input type="range" :min="meta[0]" :max="meta[1]" :step="meta[2]" x-model.number="graphSim[key]" @input="_onGraphSimChange()" />
+              <span class="graph-sim-val" x-text="(+graphSim[key]).toFixed(2)"></span>
+            </label>
+          </template>
+        </div>
+        <div class="graph-legend-col">
+          <div class="graph-legend-head">Open reveal</div>
+          <select class="graph-search" x-model="graphRevealStyle" @change="_onGraphRevealChange()">
+            <template x-for="s in graphRevealStyles" :key="s"><option :value="s" x-text="s"></option></template>
+          </select>
+          <div class="graph-legend-head">Glyphs</div>
+          <label class="graph-sim-row">
+            <input type="checkbox" x-model="graphIconOverlay" @change="_onGraphIconChange()" />
+            <span class="graph-sim-label">K8s icon overlay</span>
+          </label>
+          <button class="btn is-xs graph-sim-reset" @click="_resetGraphSim()" title="Restore tuned defaults">
+            <svg class="icon" aria-hidden="true"><use :href="iconAction('rotate-cw')"></use></svg> Reset defaults
+          </button>
+        </div>
+      </div>
+    </div>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': graphFocusEnabled}"
+      @click="graphFocusEnabled = !graphFocusEnabled; _onGraphFocusChange()"
+      title="Focus on selected resource (BFS depth)"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('crosshair')"></use></svg> Focus
+    </button>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': graphShowOrphans}"
+      @click="graphShowOrphans = !graphShowOrphans; _onGraphOrphansChange()"
+      title="Show nodes without edges (e.g. unreferenced Secrets)"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('circle-dot')"></use></svg> Orphans
+    </button>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': graphIconOverlay}"
+      @click="graphIconOverlay = !graphIconOverlay; _onGraphIconChange()"
+      title="Overlay official Kubernetes icons (auto-hidden when zoomed out / huge clusters)"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('box')"></use></svg> Icons
+    </button>
+    <div class="graph-depth-wrap" x-show="graphFocusEnabled">
+      <label for="graphDepthSlider">Depth</label>
+      <input id="graphDepthSlider" type="range" min="1" max="5" step="1" x-model.number="graphDepth" @input="_applyGraphFilters()" />
+      <span class="graph-depth-value" x-text="graphDepth"></span>
+    </div>
+    <button
+      class="btn is-toggle"
+      :class="{'is-active': graphHealthOnly}"
+      @click="_onGraphHealthChange()"
+      title="Show only unhealthy nodes (failed / pending / unknown)"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('circle-dot')"></use></svg> Unhealthy
+    </button>
+    <select class="graph-search graph-ns-select" x-model="graphNsScope" @change="_onGraphNsChange()" title="Scope to one namespace">
+      <option value="">all namespaces</option>
+      <template x-for="ns in graphNamespaces" :key="ns"><option :value="ns" x-text="ns"></option></template>
+    </select>
+    <div class="graph-search-wrap">
+      <input class="graph-search" type="text" placeholder="Filter by name…" x-model.debounce.300="graphSearch" />
+    </div>
+    <button class="btn is-xs" @click="_graphFit()" title="Fit to visible">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('maximize')"></use></svg>
+    </button>
+    <button class="btn ml-auto" @click="hideGraphView()" title="Close graph view (Esc / g)">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg> Close
+    </button>
+  </div>
+  <div id="graphBody">
+    <div id="graphViewContent"></div>
+    <!-- Inspector: clicked-node detail, or cluster-wide summary when nothing
+         is selected. Reuses the detail-pane field/section markup + classes. -->
+    <aside id="graphInspector" aria-label="Graph inspector">
+      <!-- Cluster-wide summary (no selection) -->
+      <template x-if="graphInspect.mode === 'summary'">
+        <div class="graph-inspect-body">
+          <div class="graph-inspect-title">
+            <svg class="icon" aria-hidden="true"><use :href="iconAction('layers')"></use></svg>
+            <span x-text="namespace || 'Cluster'"></span>
+          </div>
+          <div class="detail-fields-row">
+            <span class="detail-kv"><span class="detail-k">RESOURCES:</span><span class="detail-v" x-text="graphInspect.summary.total"></span></span>
+            <span class="detail-kv"
+              ><span class="detail-k">NAMESPACES:</span><span class="detail-v" x-text="graphInspect.summary.namespaces"></span
+            ></span>
+            <span class="detail-kv"
+              ><span class="detail-k">UNHEALTHY:</span
+              ><span
+                class="detail-v"
+                :class="graphInspect.summary.unhealthy > 0 ? 'text-yellow' : 'text-green'"
+                x-text="graphInspect.summary.unhealthy"
+              ></span
+            ></span>
+          </div>
+          <div class="detail-section">
+            <div class="detail-section-label">By kind</div>
+            <div class="detail-section-kv">
+              <template x-for="k in graphInspect.summary.kinds" :key="k.kind">
+                <span class="detail-kv is-clickable" @click="selectKind(k.kind)" :title="`Show all ${k.kind}s`"
+                  ><span class="detail-k" x-text="k.kind + ':'"></span><span class="detail-v" x-text="k.count"></span
+                ></span>
+              </template>
+            </div>
+          </div>
+          <p class="graph-inspect-hint">Click a node to inspect it · <kbd>/</kbd> filter · <kbd>Esc</kbd> back</p>
+        </div>
+      </template>
+      <!-- Selected resource -->
+      <template x-if="graphInspect.mode === 'resource'">
+        <div class="graph-inspect-body">
+          <div class="graph-inspect-title">
+            <button
+              type="button"
+              class="badge is-kind is-clickable"
+              x-text="graphInspect.kind"
+              @click="selectKind(graphInspect.kind)"
+              :title="`Show all ${graphInspect.kind}s`"
+            ></button>
+            <span class="detail-name" x-text="graphInspect.name"></span>
+            <button class="btn is-xs ml-auto" @click="_showGraphSummary()" title="Back to summary (Esc)">
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg>
+            </button>
+          </div>
+          <div class="graph-inspect-actions">
+            <button
+              class="btn is-xs"
+              x-show="graphInspect.resource && graphInspect.kind === 'Pod'"
+              @click="showLogsView(graphInspect.resource)"
+              title="View logs"
+            >
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('scroll-text')"></use></svg> Logs
+            </button>
+            <button
+              class="btn is-xs"
+              x-show="graphInspect.resource && graphInspect.kind === 'Pod'"
+              @click="showExecView(graphInspect.resource)"
+              title="Open shell"
+            >
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('terminal')"></use></svg> Shell
+            </button>
+          </div>
+          <div class="detail-fields-row">
+            <template x-for="f in graphInspect.fields" :key="f.key">
+              <span class="detail-kv">
+                <span class="detail-k" x-text="f.label.toUpperCase() + ':'"></span
+                ><span class="detail-v" :class="f.colorClass || ''" x-text="f.value"></span>
+              </span>
+            </template>
+          </div>
+          <template x-for="s in graphInspect.sections" :key="s.label">
+            <div class="detail-section">
+              <div class="detail-section-label" x-text="s.label"></div>
+              <template x-if="s.type === 'table'">
+                <table class="detail-section-table">
+                  <thead>
+                    <tr>
+                      <template x-for="col in s.columns" :key="col"><th x-text="col"></th></template>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(row, ri) in s.rows" :key="ri">
+                      <tr>
+                        <template x-for="(cell, ci) in row" :key="ci"><td x-text="cell"></td></template>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </template>
+              <template x-if="s.type === 'kv'">
+                <div class="detail-section-kv">
+                  <template x-for="pair in s.pairs" :key="pair.key">
+                    <span class="detail-kv"
+                      ><span class="detail-k" x-text="pair.key + ':'"></span><span class="detail-v" x-text="pair.value"></span
+                    ></span>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+          <div class="detail-section" x-show="graphInspect.events && graphInspect.events.length > 0">
+            <div class="detail-section-label">Events</div>
+            <table class="detail-events-table">
+              <tbody>
+                <template x-for="ev in graphInspect.events" :key="ev.uid">
+                  <tr>
+                    <td :class="ev.type === 'Warning' ? 'text-yellow' : 'text-green'" x-text="ev.type"></td>
+                    <td x-text="ev.reason"></td>
+                    <td class="detail-events-msg" x-text="ev.message"></td>
+                    <td x-text="ev.age"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </template>
+    </aside>
+  </div>
+  <!-- Contextual status bar -->
+  <div id="graphStatusBar">
+    <span class="graph-stat"
+      ><span class="k">nodes</span> <span class="v" x-text="`${graphStats.visibleNodes}/${graphStats.totalNodes}`"></span
+    ></span>
+    <span class="graph-stat"
+      ><span class="k">edges</span> <span class="v" x-text="`${graphStats.visibleEdges}/${graphStats.totalEdges}`"></span
+    ></span>
+    <span class="graph-stat"><span class="k">ns</span> <span class="v" x-text="graphStats.namespaces"></span></span>
+    <span class="graph-stat"><span class="k">layer</span> <span class="v" x-text="graphStats.lodLayer"></span></span>
+    <span class="graph-stat" x-show="graphStats.filterSummary"
+      ><span class="k">filter</span> <span class="v" x-text="graphStats.filterSummary"></span
+    ></span>
+    <span class="graph-stat" x-show="graphStats.selection"><span class="k">sel</span> <span class="v" x-text="graphStats.selection"></span></span>
+    <button
+      class="graph-stat is-perf ml-auto"
+      x-show="graphStats.perfHint"
+      @click="_graphCollapseToNamespace()"
+      title="Zoom out to the namespace overview"
+    >
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('maximize')"></use></svg>
+      <span x-text="graphStats.perfHint"></span> — collapse
+    </button>
+  </div>
+</div>
+
+<!-- Bottom detail pane -->
+<div
+  id="detailPane"
+  :class="{'is-expanded': detailExpanded}"
+  :style="`--detail-content-h: ${detailHeight}px`"
+  x-show="detailOpen && !inLogsView && !inExecView && !inGraphView"
+  x-cloak
+  x-transition
+>
+  <!-- Drag handle: resize pane vertically; drag up to expand, down to collapse -->
+  <div class="detail-resize-handle" @mousedown="_startDetailResize($event)" title="Drag to resize"></div>
+  <!-- Header: kind badge + name + metadata + action buttons -->
+  <div class="detail-header">
+    <button
+      type="button"
+      class="badge is-kind is-clickable"
+      x-text="detailData.kind"
+      @click="selectKind(detailData.kind)"
+      :title="`Show all ${detailData.kind}s`"
+    ></button>
+    <span class="detail-name" x-text="detailData.name"></span>
+    <div class="detail-actions">
+      <button class="btn is-xs" x-show="detailData.isPod" @click="showLogsView(detailData.resource)" title="View logs">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('file-text')"></use></svg> <span>Logs</span>
+      </button>
+      <button class="btn is-xs" x-show="detailData.isPod" @click="showExecView(detailData.resource)" title="Open shell (e)">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('terminal')"></use></svg> <span>Exec</span>
+      </button>
+      <!-- Inline Scale / Restart — hidden at narrow widths via CSS -->
+      <button class="btn is-xs tier-inline" x-show="detailData.isScalable" @click="scaleResource()" title="Scale replicas">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('move-vertical')"></use></svg> <span>Scale</span>
+      </button>
+      <button class="btn is-xs tier-inline" x-show="detailData.isRestartable" @click="restartResource()" title="Rollout restart">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('rotate-cw')"></use></svg> <span>Restart</span>
+      </button>
+      <!-- ⋯ overflow — shown only at narrow widths via CSS -->
+      <div class="popover-wrap tier-overflow" x-show="detailData.isScalable || detailData.isRestartable" @click.outside="detailMoreOpen = false">
+        <button
+          class="btn is-xs"
+          @click="detailMoreOpen = !detailMoreOpen"
+          :class="{'is-active': detailMoreOpen}"
+          title="More actions"
+          aria-label="More actions"
+        >
+          <svg class="icon" aria-hidden="true"><use :href="iconAction('more-horizontal')"></use></svg>
+        </button>
+        <div class="popover" x-show="detailMoreOpen" x-cloak>
+          <button class="popover-item" x-show="detailData.isScalable" @click="detailMoreOpen = false; scaleResource()">
+            <svg class="icon" aria-hidden="true"><use :href="iconAction('move-vertical')"></use></svg>
+            <span>Scale replicas</span>
+          </button>
+          <button class="popover-item" x-show="detailData.isRestartable" @click="detailMoreOpen = false; restartResource()">
+            <svg class="icon" aria-hidden="true"><use :href="iconAction('rotate-cw')"></use></svg>
+            <span>Rollout restart</span>
+          </button>
+        </div>
+      </div>
+      <button
+        class="btn is-xs is-danger"
+        :class="{'is-holding': delHolding}"
+        @mousedown="startDelete()"
+        @mouseup="cancelDelete()"
+        @mouseleave="cancelDelete()"
+        title="Hold to delete"
+      >
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('trash-2')"></use></svg> <span>Delete</span>
+      </button>
+      <button
+        class="btn is-xs is-ghost"
+        @click="_setDetailExpanded(!detailExpanded, { animate: true })"
+        :title="detailExpanded ? 'Collapse (Esc)' : 'Expand'"
+      >
+        <svg class="icon" aria-hidden="true"><use :href="iconAction(detailExpanded ? 'chevron-down' : 'chevron-up')"></use></svg>
+      </button>
+      <button class="btn is-xs is-ghost" @click="detailOpen = false" title="Close">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="detail-tabs">
+    <button class="detail-tab" :class="{'is-active': detailTab === 'info'}" @click="detailTab = 'info'">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('info')"></use></svg> Info
+    </button>
+    <button class="detail-tab" :class="{'is-active': detailTab === 'yaml'}" @click="detailTab = 'yaml'">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('code')"></use></svg> YAML
+    </button>
+    <button class="detail-tab" :class="{'is-active': detailTab === 'events'}" @click="detailTab = 'events'">
+      <svg class="icon" aria-hidden="true"><use :href="iconAction('bell')"></use></svg> Events
+    </button>
+  </div>
+
+  <!-- Info tab: KEY:VALUE fields + sections -->
+  <div class="detail-tab-content" x-show="detailTab === 'info'">
+    <div class="detail-fields-row">
+      <template x-for="f in detailData.fields" :key="f.key">
+        <span class="detail-kv">
+          <span class="detail-k" x-text="f.label.toUpperCase() + ':'"></span
+          ><template x-if="f.ref"
+            ><button
+              type="button"
+              class="detail-v is-clickable"
+              :class="f.colorClass || ''"
+              x-text="f.value"
+              @click="_jumpToRef(f.ref.kind, f.ref.namespace, f.ref.name)"
+              :title="`Go to ${f.ref.kind} ${f.ref.name}`"
+            ></button></template
+          ><template x-if="!f.ref"><span class="detail-v" :class="f.colorClass || ''" x-text="f.value"></span></template>
+        </span>
+      </template>
+    </div>
+    <template x-for="s in detailData.sections" :key="s.label">
+      <div class="detail-section">
+        <div class="detail-section-label" x-text="s.label"></div>
+        <template x-if="s.type === 'table'">
+          <table class="detail-section-table">
+            <thead>
+              <tr>
+                <template x-for="col in s.columns" :key="col"><th x-text="col"></th></template>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(row, ri) in s.rows" :key="ri">
+                <tr>
+                  <template x-for="(cell, ci) in row" :key="ci"><td x-text="cell"></td></template>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+        <template x-if="s.type === 'kv'">
+          <div class="detail-section-kv">
+            <template x-for="pair in s.pairs" :key="pair.key">
+              <span class="detail-kv"><span class="detail-k" x-text="pair.key + ':'"></span><span class="detail-v" x-text="pair.value"></span></span>
+            </template>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <!-- YAML tab -->
+  <div class="detail-tab-content detail-tab-yaml" x-show="detailTab === 'yaml'" @click.stop>
+    <template x-if="detailData.yamlError">
+      <span class="detail-tab-empty" x-text="detailData.yamlError"></span>
+    </template>
+    <template x-if="detailData.yaml && !detailData.yamlLoading">
+      <div class="detail-yaml-wrap">
+        <!-- View mode toolbar -->
+        <template x-if="!yamlEditing">
+          <div class="yaml-toolbar">
+            <button class="btn is-xs" @click="_copyYAML()" title="Copy YAML">
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('copy')"></use></svg> Copy
+            </button>
+            <button class="btn is-xs" @click="_startYAMLEdit()" title="Edit YAML">
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('pencil')"></use></svg> Edit
+            </button>
+          </div>
+        </template>
+        <!-- Edit mode toolbar -->
+        <template x-if="yamlEditing">
+          <div class="yaml-toolbar">
+            <span x-show="yamlApplyError" class="yaml-apply-error" x-text="yamlApplyError"></span>
+            <button class="btn is-xs" @click="_cancelYAMLEdit()" title="Cancel editing">
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg> Cancel
+            </button>
+            <button class="btn is-xs is-success" @click="_applyYAML()" :disabled="yamlApplying" title="Apply changes">
+              <svg class="icon" aria-hidden="true"><use :href="iconAction('check')"></use></svg>
+              <span x-text="yamlApplying ? 'Applying…' : 'Apply'"></span>
+            </button>
+          </div>
+        </template>
+        <!-- View mode: syntax-highlighted -->
+        <template x-if="!yamlEditing">
+          <pre class="detail-yaml-pre language-yaml"><code class="language-yaml" x-ref="yamlCode" x-text="detailData.yaml"></code></pre>
+        </template>
+        <!-- Edit mode: textarea -->
+        <template x-if="yamlEditing">
+          <textarea id="yamlEditor" class="yaml-editor" x-model="yamlEditContent" spellcheck="false"></textarea>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <!-- Events tab -->
+  <div class="detail-tab-content" x-show="detailTab === 'events'">
+    <template x-if="detailData.events && detailData.events.length > 0">
+      <table class="detail-events-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Reason</th>
+            <th>Message</th>
+            <th>Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="ev in detailData.events" :key="ev.uid">
+            <tr>
+              <td :class="ev.type === 'Warning' ? 'text-yellow' : 'text-green'" x-text="ev.type"></td>
+              <td x-text="ev.reason"></td>
+              <td class="detail-events-msg" x-text="ev.message"></td>
+              <td x-text="ev.age"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </template>
+    <template x-if="!detailData.events || detailData.events.length === 0">
+      <span class="detail-tab-empty">No events</span>
+    </template>
+  </div>
+</div>

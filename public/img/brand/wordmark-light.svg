@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 290 80" width="290" height="80" role="img" aria-label="kubeatlas">
+  <title>kubeatlas wordmark (light surface)</title>
+  <desc>Lowercase kubeatlas wordmark for light backgrounds — "kube" near-black ink, "atlas" accent #2962FF. Matches og-card.png.</desc>
+  <text x="12" y="55" font-family="Inter, 'Helvetica Neue', Arial, system-ui, sans-serif" font-size="56" font-weight="800" letter-spacing="-1.2">
+    <tspan fill="#07090f">kube</tspan><tspan fill="#2962FF">atlas</tspan>
+  </text>
+</svg>

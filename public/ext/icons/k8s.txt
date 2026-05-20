@@ -1,0 +1,36 @@
+# Official Kubernetes icon-pack manifest — vendored into
+# public/ext/icons/sprite-k8s.svg.
+#
+# Source: github.com/kubernetes/community/icons/svg (CC BY 4.0).
+# Attribution is required: "Kubernetes resource icons © The Kubernetes
+# Authors, licensed under CC BY 4.0."
+#
+# Format: `<kind-kebab> <path-under-icons/svg>`. The kind-kebab becomes a
+# `<symbol id="k-<kind-kebab>">` in the sprite. Kinds the pack doesn't
+# cover (Event, fallback) fall back to Lucide via iconForKind() in icons.js.
+
+pod                          resources/labeled/pod.svg
+deployment                   resources/labeled/deploy.svg
+replicaset                   resources/labeled/rs.svg
+statefulset                  resources/labeled/sts.svg
+daemonset                    resources/labeled/ds.svg
+job                          resources/labeled/job.svg
+cronjob                      resources/labeled/cronjob.svg
+horizontalpodautoscaler      resources/labeled/hpa.svg
+configmap                    resources/labeled/cm.svg
+secret                       resources/labeled/secret.svg
+persistentvolume             resources/labeled/pv.svg
+persistentvolumeclaim        resources/labeled/pvc.svg
+storageclass                 resources/labeled/sc.svg
+service                      resources/labeled/svc.svg
+ingress                      resources/labeled/ing.svg
+networkpolicy                resources/labeled/netpol.svg
+endpoints                    resources/labeled/ep.svg
+node                         infrastructure_components/labeled/node.svg
+namespace                    resources/labeled/ns.svg
+serviceaccount               resources/labeled/sa.svg
+role                         resources/labeled/role.svg
+clusterrole                  resources/labeled/c-role.svg
+rolebinding                  resources/labeled/rb.svg
+clusterrolebinding           resources/labeled/crb.svg
+customresourcedefinition     resources/labeled/crd.svg

@@ -1,0 +1,2810 @@
+/* ── Self-hosted fonts ────────────────────────────────────────
+ *  Vendored into public/ext/fonts/. Latin subset only;
+ *  weights 400/500/600 for Inter and 400/500 for JetBrains Mono cover
+ *  every weight referenced in this stylesheet. `font-display: swap`
+ *  means the UI paints on the fallback stack first and the web font
+ *  hot-swaps in once loaded — no FOIT block, no layout shift beyond
+ *  the metric difference inherent to the swap.
+ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../ext/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../ext/fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../ext/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../ext/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../ext/fonts/jetbrains-mono-500.woff2') format('woff2');
+}
+
+/* ── Design tokens ───────────────────────────────────────────── */
+
+:root {
+  /* Surface layers (deepest → highest) */
+  --bg-detail: #090d14;
+  --bg-logs: #080c10;
+  --bg-exec: #0a0e14;
+  --bg-cmd: #0d0f17;
+  --bg-yaml-editor: #0d0f14;
+  --bg-panel: #0d1117;
+  --bg-app: #0f1117;
+  --bg-statusbar: #0f1218;
+  --bg-table-head: #111318;
+  --bg-row-hover: #1a1f2e;
+  --bg-elevated: #1a1d23;
+  --bg-elevated-hover: #22273a;
+  --bg-selected: #1c2a45;
+  --bg-accent: #1e3a5f;
+  --bg-accent-deep: #1d3557;
+  --bg-kbd: #1e2130;
+
+  /* Borders */
+  --border-row: #1d2030;
+  --border-muted: #1e2533;
+  --border-cmd: #1f2937;
+  --border-statusbar: #1f2230;
+  --border: #2e3140;
+  --border-strong: #374151;
+  --border-stronger: #4b5563;
+
+  /* Text */
+  --text-primary: #e2e8f0;
+  --text-primary-2: #f1f5f9;
+  --text-code: #d4d4d4;
+  --text-code-2: #d1d5db;
+  --text-secondary: #c8d3e0;
+  --text-sidebar: #bcc5d6;
+  --text-tertiary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-muted-2: #6e7891;
+  --text-statuslabel: #6b7d95;
+  --text-exec-label: #94a3b8;
+  --text-table-head: #8899aa;
+  --text-placeholder: #4b5563;
+  --text-dim: #374151;
+
+  /* Accents (blue) — lighter siblings of brand #2962FF for AA on dark bg */
+  --accent: #4d82ff;
+  --accent-soft: #7aa0ff;
+  --accent-softer: #a8c2ff;
+
+  /* Status */
+  --success: #22c55e;
+  --success-text: #4ade80;
+  --success-text-soft: #86efac;
+  --success-bg: #14532d;
+  --success-border: #166534;
+  --warn: #eab308;
+  --warn-text: #facc15;
+  --warn-accent: #f59e0b;
+  --warn-bg: #854d0e;
+  --warn-text-soft: #fef08a;
+  --danger: #ef4444;
+  --danger-text: #f87171;
+  --danger-bg: #2d1010;
+  --danger-border: #7f1d1d;
+
+  /* Graph edges — match graph-canvas.js semantic colours */
+  --edge-owner: #9aa0a6;
+  --edge-network: #4a9eff;
+  --edge-mount: #3ecf8e;
+  --edge-env: #f5a623;
+
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+
+  /* Font sizes */
+  --fs-2xs: 0.68rem;
+  --fs-xs: 0.72rem;
+  --fs-sm: 0.75rem;
+  --fs-md: 0.78rem;
+  --fs-base: 0.85rem;
+  --fs-lg: 0.9rem;
+
+  /* Radii */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 5px;
+  --radius-pill: 10px;
+
+  /* Layout */
+  --sidebar-width: 210px;
+  --topbar-height: 40px;
+  --statusbar-height: 26px;
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-med: 200ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Light theme overrides ───────────────────────────────────────
+ *  Activated by [data-theme="light"] on <html>. Every token defined
+ *  in :root above MUST appear here so theme switching is total —
+ *  any missing token leaks a dark value into a light surface.
+ *
+ *  Hue choices follow docs/branding_requirements.md §4.3. The light brand hue
+ *  is darker than dark mode's so contrast holds on white surfaces (WCAG AA
+ *  ≥4.5:1 for body, ≥3:1 for ≥18px).
+ */
+[data-theme='light'] {
+  /* Surface layers (deepest → highest) */
+  --bg-detail: #fbfcfd;
+  --bg-logs: #f7f8fa;
+  --bg-exec: #ffffff;
+  --bg-cmd: #f7f8fa;
+  --bg-yaml-editor: #ffffff;
+  --bg-panel: #f7f8fa;
+  --bg-app: #ffffff;
+  --bg-statusbar: #eef0f4;
+  --bg-table-head: #eef0f4;
+  --bg-row-hover: #eef2ff;
+  --bg-elevated: #e6e9ef;
+  --bg-elevated-hover: #d8deea;
+  --bg-selected: #dbeafe;
+  --bg-accent: #dbeafe;
+  --bg-accent-deep: #bfd7f3;
+  --bg-kbd: #e6e9ef;
+
+  /* Borders */
+  --border-row: #e6e9ef;
+  --border-muted: #dee2e9;
+  --border-cmd: #d0d7e2;
+  --border-statusbar: #d0d7e2;
+  --border: #d0d7e2;
+  --border-strong: #a7b1c2;
+  --border-stronger: #8c95a4;
+
+  /* Text */
+  --text-primary: #1f2328;
+  --text-primary-2: #0d1117;
+  --text-code: #1f2328;
+  --text-code-2: #374151;
+  --text-secondary: #374151;
+  --text-sidebar: #3a4350;
+  --text-tertiary: #57606a;
+  --text-muted: #6b7280;
+  --text-muted-2: #7a8190;
+  --text-statuslabel: #7a8190;
+  --text-exec-label: #6b7280;
+  --text-table-head: #6b7280;
+  --text-placeholder: #9ca3af;
+  --text-dim: #c0c6d2;
+
+  /* Accents (blue) — brand #2962FF reads directly on white (~4.9:1) */
+  --accent: #2962ff;
+  --accent-soft: #5b8dff;
+  --accent-softer: #8fb0ff;
+
+  /* Status — darker fills + light tinted backgrounds */
+  --success: #15803d;
+  --success-text: #15803d;
+  --success-text-soft: #22c55e;
+  --success-bg: #dcfce7;
+  --success-border: #86efac;
+  --warn: #a16207;
+  --warn-text: #a16207;
+  --warn-accent: #b45309;
+  --warn-bg: #fef9c3;
+  --warn-text-soft: #a16207;
+  --danger: #b91c1c;
+  --danger-text: #b91c1c;
+  --danger-bg: #fee2e2;
+  --danger-border: #fca5a5;
+
+  /* Graph edges — darker for ink-on-paper contrast */
+  --edge-owner: #57606a;
+  --edge-network: #1f6feb;
+  --edge-mount: #15803d;
+  --edge-env: #a16207;
+}
+
+/* Respect OS-level motion reduction — wipe every transition/animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ── Shared components: button + badge ───────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-tertiary);
+  font-size: var(--fs-xs);
+  line-height: 1.35;
+  padding: 3px 9px;
+  min-height: 24px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.1s,
+    color 0.1s,
+    border-color 0.1s;
+  font-family: inherit;
+}
+
+.btn > i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.btn:hover {
+  background: var(--bg-elevated-hover);
+  color: var(--text-primary);
+  border-color: var(--border-stronger);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.is-toggle.is-active {
+  background: var(--bg-selected);
+  color: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.btn.is-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn.is-ghost:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.btn.is-xs {
+  font-size: var(--fs-2xs);
+  padding: 2px 7px;
+  min-height: 22px;
+  color: var(--text-muted);
+}
+
+/* Icon-only buttons (no <span> child) get equal width & height */
+.btn.is-xs:has(> i:only-child) {
+  padding: 2px;
+  min-width: 22px;
+}
+
+.btn:has(> i:only-child) {
+  padding: 3px;
+  min-width: 24px;
+}
+
+.btn.is-xs:hover {
+  background: var(--bg-elevated-hover);
+  color: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.btn.is-success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+.btn.is-success:hover:not(:disabled) {
+  background: var(--success-border);
+  color: var(--success-text-soft);
+  border-color: var(--success-border);
+}
+
+.btn.is-danger {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn.is-danger:hover {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+
+@keyframes holdFill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.btn.is-danger.is-holding::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--danger);
+  animation: holdFill 1.5s linear forwards;
+}
+
+.ml-auto {
+  margin-left: auto;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font-size: var(--fs-2xs);
+  padding: 2px 7px;
+}
+
+.badge.is-kind {
+  background: var(--bg-accent);
+  color: var(--accent-soft);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.badge.is-neutral {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.badge.is-age {
+  color: var(--text-placeholder);
+  font-size: var(--fs-xs);
+  padding: 0;
+}
+
+/* Button variant — used when a badge is wired up as a click target. */
+button.badge {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+button.badge.is-clickable:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Base layout ─────────────────────────────────────────────── */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--text-primary);
+}
+
+/* ── Main layout ─────────────────────────────────────────────── */
+
+#mainView {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Backdrop shown behind the sidebar when peek-open. Covers the table area
+ * so tap-outside-to-close works. Below the sidebar (z 50) in stacking. */
+.sidebar-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 49;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-med) var(--ease-out);
+}
+
+.sidebar-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#sidebar {
+  width: var(--sidebar-width);
+  min-width: 200px;
+  background-color: var(--bg-elevated);
+  /* Keep overflow-x: hidden always so the width transition doesn't fight
+   * a discrete overflow flip at the ≤480 breakpoint. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  padding-top: 8px;
+  transition:
+    width var(--dur-med) var(--ease-out),
+    min-width var(--dur-med) var(--ease-out),
+    padding var(--dur-med) var(--ease-out),
+    border-right-width var(--dur-med) var(--ease-out);
+}
+
+#tableArea {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+
+.sidebar-group {
+  margin-bottom: 4px;
+}
+
+/* Divider line between groups (first group has no top border). Serves as
+ * the group-boundary indicator at every width — including icon mode,
+ * where the label text fades out. */
+.sidebar-group + .sidebar-group {
+  border-top: 1px solid var(--border-muted);
+  margin-top: 4px;
+  padding-top: 2px;
+}
+
+.sidebar-group-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted-2);
+  padding: 10px 12px 4px;
+  /* Prevent mid-transition text-wrap from reflowing vertical positions. */
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  /* Fix the row height so hiding the text label at narrow widths doesn't
+   * let the 18px icon shrink the box vertically. */
+  min-height: 30px;
+  box-sizing: border-box;
+  cursor: pointer;
+  color: var(--text-sidebar);
+  font-size: var(--fs-base);
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  transition:
+    background 0.1s,
+    padding var(--dur-med) var(--ease-out);
+}
+
+.sidebar-item:hover {
+  background-color: var(--bg-elevated-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-item.is-active {
+  background-color: var(--bg-selected);
+  border-left-color: var(--accent);
+  color: var(--accent-softer);
+}
+
+.sidebar-item.is-empty {
+  opacity: 0.55;
+}
+
+.sidebar-count {
+  margin-left: auto;
+  font-size: var(--fs-xs);
+  color: var(--text-muted-2);
+  background: var(--bg-elevated-hover);
+  border-radius: var(--radius-pill);
+  padding: 1px 7px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.sidebar-item.is-active .sidebar-count {
+  background: var(--bg-accent-deep);
+  color: var(--accent-softer);
+}
+
+.sidebar-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+}
+
+/* ── Icon sprite primitives ───────────────────────────────────────
+ *  All in-app icons render through <svg><use href="...sprite.svg#i-..."/></svg>
+ *  in either of these two classes. The `<use>` element inherits
+ *  `currentColor` for Lucide glyphs (stroke="currentColor"); K8s pack
+ *  glyphs keep their pack colors by design.
+ */
+.icon {
+  display: inline-block;
+  vertical-align: -2px;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  color: currentColor;
+}
+.icon-sm {
+  width: 14px;
+  height: 14px;
+}
+.icon-md {
+  width: 16px;
+  height: 16px;
+}
+.icon-lg {
+  width: 20px;
+  height: 20px;
+}
+
+.res-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: currentColor;
+}
+
+.sidebar-item span:not(.sidebar-count):not(.sidebar-icon) {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.sidebar-count {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.sidebar-group-label {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* ── Resource table ──────────────────────────────────────────── */
+
+#resourceTable {
+  width: 100%;
+}
+
+.resource-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  min-height: 0;
+}
+
+.resource-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  /* Tabular figures so column-aligned numbers (replicas, ages, ports,
+   * IPs) line up regardless of digit width — see spec §4.1. */
+  font-variant-numeric: tabular-nums;
+}
+
+#statusBar,
+.detail-section-table,
+.detail-events-table,
+.sidebar-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.resource-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-table-head);
+  color: var(--text-table-head);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.resource-table tbody tr {
+  border-bottom: 1px solid var(--border-row);
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 3px solid transparent;
+}
+
+.resource-table tbody tr:hover {
+  background-color: var(--bg-row-hover);
+}
+
+.resource-table tbody tr.is-drillable td.name-col::after {
+  content: ' ›';
+  color: var(--text-dim);
+  transition: color 0.1s;
+}
+
+.resource-table tbody tr.is-drillable:hover td.name-col::after {
+  color: var(--accent-soft);
+}
+
+.resource-table tbody tr.is-selected {
+  background-color: var(--bg-selected);
+  border-left-color: var(--accent);
+}
+
+.resource-table td {
+  padding: 5px 12px;
+  color: var(--text-secondary);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.resource-table td.name-col {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Cross-reference button inside a table cell — strips the default
+ * <button> chrome so the cell still reads like plain text, with a
+ * subtle underline on hover to signal the click target. */
+button.cell-ref {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+
+button.cell-ref:hover {
+  color: var(--accent-soft);
+  text-decoration-color: var(--accent-soft);
+}
+
+/* Status border colour classes */
+.status-green {
+  border-left-color: var(--success) !important;
+}
+.status-yellow {
+  border-left-color: var(--warn) !important;
+}
+.status-red {
+  border-left-color: var(--danger) !important;
+}
+.status-blue {
+  border-left-color: var(--accent) !important;
+}
+.status-grey {
+  border-left-color: var(--text-muted) !important;
+}
+
+/* Status text colour */
+.text-green {
+  color: var(--success-text);
+  font-weight: 600;
+}
+.text-yellow {
+  color: var(--warn-text);
+  font-weight: 600;
+}
+.text-red {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+.text-blue {
+  color: var(--accent-soft);
+  font-weight: 600;
+}
+.text-grey {
+  color: var(--text-tertiary);
+}
+
+#topBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  padding: 0 14px 0 0;
+  background: var(--bg-app);
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+  height: var(--topbar-height);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: var(--sidebar-width);
+  padding: 0 12px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  /* Always clip horizontally so the ≤480 collapse doesn't need a
+   * discrete overflow flip mid-transition. */
+  overflow: hidden;
+  transition:
+    width var(--dur-med) var(--ease-out),
+    padding var(--dur-med) var(--ease-out),
+    gap var(--dur-med) var(--ease-out);
+}
+
+.topbar-brand.is-clickable {
+  cursor: pointer;
+}
+
+.topbar-brand.is-clickable:hover .topbar-title {
+  color: #fff;
+}
+
+.topbar-logo {
+  width: 22px;
+  height: 22px;
+  display: block;
+  opacity: 1;
+  max-width: 22px;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    max-width var(--dur-med) var(--ease-out);
+}
+
+.topbar-title {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 1;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    max-width var(--dur-med) var(--ease-out);
+}
+
+.topbar-search {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+}
+
+.table-search {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  flex: 1;
+  min-width: 0;
+  outline: none;
+}
+
+.table-search:focus {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.table-search::placeholder {
+  color: var(--text-placeholder);
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────── */
+
+#breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.breadcrumb-item {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.breadcrumb-link {
+  color: var(--accent-soft);
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+  color: var(--accent-softer);
+  text-decoration: underline;
+}
+
+.breadcrumb-sep {
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.breadcrumb-kind {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* ── Drill-down icon ─────────────────────────────────────────── */
+
+.drill-col {
+  width: 36px !important;
+  padding: 0 4px !important;
+  text-align: center;
+}
+
+.drill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-md);
+  color: var(--text-placeholder);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+  visibility: hidden;
+  user-select: none;
+}
+
+tr:hover .drill-icon {
+  visibility: visible;
+}
+
+.drill-icon:hover {
+  background: var(--bg-accent);
+  color: var(--accent-soft);
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted-2);
+  font-size: var(--fs-lg);
+}
+
+/* ── Overlay primitive (shared modal / dialog) ─────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 7, 12, 0.66);
+  backdrop-filter: blur(2px);
+  padding: 24px;
+}
+
+.overlay-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  width: min(720px, 100%);
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.overlay-panel.is-wide {
+  width: min(960px, 100%);
+}
+
+.overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-elevated);
+}
+
+.overlay-title {
+  flex: 1;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overlay-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 14px;
+  color: var(--text-secondary);
+  font-size: var(--fs-base);
+}
+
+.overlay-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-muted);
+  background: var(--bg-elevated);
+}
+
+.overlay-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg-elevated);
+}
+
+.overlay-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-placeholder);
+  font-size: var(--fs-sm);
+  padding: 8px 12px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.overlay-tab:hover {
+  color: var(--text-secondary);
+}
+
+.overlay-tab.is-active {
+  color: var(--accent-soft);
+  border-bottom-color: var(--accent);
+}
+
+.overlay-field {
+  margin-bottom: 14px;
+}
+
+.overlay-field > label {
+  display: block;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.overlay-help {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  margin-top: 4px;
+}
+
+.overlay-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.overlay-check input[type='checkbox'] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.overlay-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.overlay-chip-group-label {
+  flex-basis: 100%;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted-2);
+  margin-top: 6px;
+}
+
+.overlay-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.overlay-table th {
+  text-align: left;
+  padding: 6px 10px;
+  color: var(--text-table-head);
+  font-weight: 600;
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.overlay-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-row);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.overlay-table tr:last-child td {
+  border-bottom: none;
+}
+
+.overlay-table .is-warning {
+  color: var(--danger-text);
+}
+
+.overlay-table .is-normal {
+  color: var(--success-text);
+}
+
+.overlay-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+/* ── Popover (overflow menus, etc.) ──────────────────────────── */
+
+.popover-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.popover {
+  position: absolute;
+  z-index: 500;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  min-width: 140px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.popover-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.popover-item:hover {
+  background: var(--bg-elevated-hover);
+  color: var(--text-primary);
+}
+
+.popover-item i {
+  width: 12px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* Tiered responsive buttons
+ * - Wide (> 900px, default): .tier-inline visible, .tier-overflow hidden
+ * - Narrow (≤ 900px, in media block below): .tier-inline hidden, .tier-overflow visible
+ * No !important — x-show's inline `display: none` stays authoritative when the
+ * feature is unavailable (e.g. non-scalable kinds).
+ */
+/* Default state: tier-inline visible (opacity 1), tier-overflow hidden
+ * (opacity 0 + display: none). Each has its visible/hidden state pinned
+ * so the opposite media query can transition both opacity AND display
+ * in either direction — without pinned hidden values, going narrow→wide
+ * had no opacity delta to animate and display simply snapped. */
+.tier-inline,
+.tier-overflow {
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    display var(--dur-fast) var(--ease-out) allow-discrete;
+}
+
+.tier-inline {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tier-overflow {
+  opacity: 0;
+  transform: translateY(-2px);
+  display: none;
+}
+
+/* Detail-pane action text labels that snap away at ≤900px — fade them so
+ * the text → icon-only transition glides instead of pops. */
+.detail-actions .btn span:not(.icon) {
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    max-width var(--dur-med) var(--ease-out),
+    margin var(--dur-med) var(--ease-out);
+}
+
+#logArea {
+  height: 70vh;
+  width: 100%;
+  font-family: monospace;
+  font-size: var(--fs-lg);
+  overflow-y: auto;
+  color: #eee;
+  background-color: black;
+  padding: 8px;
+  resize: none;
+}
+
+/* ── Loading ─────────────────────────────────────────────────── */
+
+#loading {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 80px;
+  width: 100%;
+  z-index: 20;
+}
+
+#loadingOverlay {
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 150px;
+  width: 100%;
+  z-index: 20;
+}
+
+/* ── Welcome screen ──────────────────────────────────────────── */
+
+#welcome {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 22;
+  max-width: 520px;
+  text-align: center;
+}
+
+/* ── Utilities ───────────────────────────────────────────────── */
+
+pre {
+  margin: 10px !important;
+  padding: 5px !important;
+  background-color: #080808;
+}
+
+/* Inlined wordmark lockup. The SVG's "kube" glyphs are fill:currentColor
+ * and "atlas" is .wm-atlas — both resolve against these host rules, so the
+ * wordmark tracks the in-app data-theme toggle (not just OS preference). */
+.wordmark svg {
+  display: block;
+  height: 3.25rem;
+  width: auto;
+}
+
+[data-theme='dark'] .wordmark {
+  color: #f1f5f9;
+}
+[data-theme='dark'] .wordmark .wm-atlas {
+  fill: #4d82ff;
+}
+
+[data-theme='light'] .wordmark {
+  color: #0d1526;
+}
+[data-theme='light'] .wordmark .wm-atlas {
+  fill: #2962ff;
+}
+
+/* ── Banners (fatal error / welcome) ─────────────────────────── */
+
+.banner {
+  margin: 20px;
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+}
+
+.banner.is-danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+
+.banner.is-welcome {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.banner-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.banner pre {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+}
+
+.welcome-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rounded {
+  border-radius: 0.5rem;
+}
+
+.valign-middle {
+  vertical-align: middle;
+}
+
+.is-grey {
+  background-color: #aaa !important;
+  color: #161616 !important;
+}
+
+/* Fragment container — must be flex column to fill #tableArea */
+[data-fragment='table'] {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Logs view ───────────────────────────────────────────────── */
+
+#logsView {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-logs);
+}
+
+#logsViewContent {
+  flex: 1;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-code);
+  padding: 12px 16px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ── Logs view header ────────────────────────────────────────── */
+
+#logsViewHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-muted);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logs-container-select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: var(--fs-md);
+  padding: 3px 8px;
+  cursor: pointer;
+  outline: none;
+  margin-right: 2px;
+}
+
+.logs-container-select:focus {
+  border-color: var(--accent);
+}
+
+.logs-search-wrap {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0 8px;
+  gap: 5px;
+  margin-left: 4px;
+}
+
+.logs-search-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.logs-search-icon {
+  color: var(--text-placeholder);
+  font-size: var(--fs-2xs);
+  flex-shrink: 0;
+}
+
+.logs-search {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: var(--fs-sm);
+  padding: 3px 0;
+  width: 140px;
+  outline: none;
+}
+
+.logs-search::placeholder {
+  color: var(--text-dim);
+}
+
+.logs-match-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  border-left: 1px solid var(--border);
+  padding-left: 6px;
+}
+
+#logsViewContent mark {
+  background: var(--warn-bg);
+  color: var(--warn-text-soft);
+  border-radius: 2px;
+}
+
+/* ── Exec / shell view ───────────────────────────────────────── */
+
+#execView {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-exec);
+}
+
+#execViewHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-muted);
+  flex-shrink: 0;
+}
+
+#execTerminal {
+  flex: 1;
+  overflow: hidden;
+  padding: 4px 8px;
+}
+
+.exec-label {
+  color: var(--text-exec-label);
+  font-size: 0.82rem;
+  margin-right: auto;
+}
+
+/* ── Graph view ──────────────────────────────────────────────── */
+
+#graphView {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+}
+
+#graphViewHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-muted);
+  flex-shrink: 0;
+}
+
+/* Row: canvas (flex) + inspector (fixed rail). Sits between header and
+   status bar inside the #graphView column. */
+#graphBody {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#graphViewContent {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+#graphInspector {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-muted);
+  font-size: 0.82rem;
+}
+
+.graph-inspect-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.graph-inspect-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.graph-inspect-title .detail-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-inspect-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.graph-inspect-hint {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.graph-inspect-hint kbd {
+  background: var(--bg-input, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border-muted);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+#graphInspector .detail-kv.is-clickable {
+  cursor: pointer;
+}
+
+#graphInspector .detail-kv.is-clickable:hover .detail-v {
+  color: var(--accent);
+}
+
+#graphStatusBar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 3px 12px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border-muted);
+  flex-shrink: 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.graph-stat .k {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.graph-stat .v {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+button.graph-stat.is-perf {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid var(--warn-text, #facc15);
+  border-radius: var(--radius-sm, 4px);
+  padding: 1px 8px;
+  cursor: pointer;
+  font: inherit;
+}
+
+button.graph-stat.is-perf:hover {
+  background: color-mix(in srgb, var(--warn-text, #facc15) 16%, transparent);
+}
+
+.graph-stat.is-perf {
+  color: var(--warn-text, #facc15);
+}
+
+.graph-ns-select {
+  max-width: 150px;
+}
+
+.graph-stat.ml-auto {
+  margin-left: auto;
+}
+
+.graph-label {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-right: auto;
+}
+
+.graph-depth-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.graph-depth-wrap input[type='range'] {
+  width: 90px;
+}
+
+.graph-depth-value {
+  min-width: 1.2em;
+  text-align: center;
+  color: var(--text-default, #e6e6e6);
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-search-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.graph-search {
+  background: var(--bg-input, rgba(255, 255, 255, 0.04));
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm, 4px);
+  color: var(--text-default, #e6e6e6);
+  padding: 3px 8px;
+  font-size: 0.82rem;
+  min-width: 140px;
+}
+
+/* Edge-type legend in the graph toolbar */
+.graph-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.graph-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.graph-legend-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.graph-legend-swatch.is-owner {
+  background: var(--edge-owner);
+}
+.graph-legend-swatch.is-network {
+  background: var(--edge-network);
+  height: 3px;
+}
+.graph-legend-swatch.is-mount {
+  background: transparent;
+  border-top: 2px dashed var(--edge-mount);
+}
+.graph-legend-swatch.is-env-ref {
+  background: transparent;
+  border-top: 2px dotted var(--edge-env);
+}
+
+/* Collapsible legend: button + popover (shape·kind / colour·status / link). */
+.graph-legend-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.graph-legend-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 60;
+  display: flex;
+  gap: 22px;
+  padding: 12px 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--radius-sm, 5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.graph-legend-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.graph-legend-head {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.graph-legend-head:not(:first-child) {
+  margin-top: 8px;
+}
+
+.graph-legend-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.lg-shape {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+
+.lg-circle {
+  border-radius: 50%;
+}
+.lg-roundsquare {
+  border-radius: 28%;
+}
+.lg-square {
+  border-radius: 2px;
+}
+.lg-diamond {
+  transform: rotate(45deg) scale(0.82);
+}
+.lg-triangle {
+  background: transparent;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid var(--text-muted);
+}
+.lg-triangle-down {
+  background: transparent;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 12px solid var(--text-muted);
+}
+.lg-hexagon {
+  clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+}
+.lg-cylinder {
+  width: 11px;
+  height: 14px;
+  border-radius: 45% / 22%;
+}
+.lg-gauge {
+  border-radius: 50%;
+  background: conic-gradient(var(--text-muted) 0 270deg, transparent 270deg 360deg);
+}
+
+.lg-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.lg-dot.is-green {
+  background: var(--success, #22c55e);
+}
+.lg-dot.is-yellow {
+  background: var(--warn, #eab308);
+}
+.lg-dot.is-red {
+  background: var(--danger, #ef4444);
+}
+.lg-dot.is-blue {
+  background: var(--accent, #4d82ff);
+}
+.lg-dot.is-grey {
+  background: var(--text-muted, #9aa0a6);
+}
+
+/* Sim config popover (reuses .graph-legend-pop shell). */
+.graph-config-pop {
+  white-space: normal;
+}
+
+.graph-config-pop .graph-legend-col {
+  min-width: 210px;
+  gap: 7px;
+}
+
+.graph-sim-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.graph-sim-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.graph-sim-row input[type='range'] {
+  flex: 1.4;
+  min-width: 90px;
+}
+
+.graph-sim-val {
+  width: 42px;
+  text-align: right;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.graph-config-pop select.graph-search {
+  width: 100%;
+}
+
+.graph-sim-reset {
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+/* Pod-name badge shown in the logs / exec view headers — clicking
+ * closes the view and jumps back to the Pod's detail pane. */
+.view-pod-badge {
+  background: var(--bg-accent);
+  color: var(--accent-soft);
+  border: 0;
+  border-radius: var(--radius-md);
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.view-pod-badge:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Bottom detail pane ──────────────────────────────────────── */
+
+#detailPane {
+  flex-shrink: 0;
+  border-top: 2px solid var(--bg-accent);
+  background: var(--bg-detail);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans);
+}
+
+/* Header row: kind badge + name + ns + age + action buttons */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 0;
+}
+
+.detail-name {
+  color: var(--text-primary-2);
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Button variant — strip default <button> chrome and add a subtle
+ * hover affordance. Used when the name is wired up to copy on click. */
+button.detail-name {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.detail-name.is-clickable:hover {
+  color: var(--accent-soft);
+}
+
+.detail-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Tab bar */
+.detail-tabs {
+  display: flex;
+  gap: 0;
+  align-items: center;
+  padding: 4px 14px 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.detail-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-placeholder);
+  font-size: var(--fs-sm);
+  padding: 4px 10px 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-bottom: -1px;
+  transition: color 0.1s;
+}
+
+.detail-tab:hover {
+  color: var(--text-tertiary);
+}
+
+.detail-tab.is-active {
+  color: var(--accent-soft);
+  border-bottom-color: var(--accent);
+}
+
+/* Tab content areas.
+ * border-box so the pinned collapsed height (--detail-content-h) is the
+ * outer box total — any padding override per-tab (e.g. .detail-tab-yaml
+ * sets padding:0 because .detail-yaml-wrap pads itself) doesn't change
+ * the outer height. Without this, info (padded) ends up 12px taller than
+ * yaml (unpadded) even though both request 320px. */
+.detail-tab-content {
+  overflow-y: auto;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  box-sizing: border-box;
+}
+
+#detailPane:not(.is-expanded) .detail-tab-content {
+  height: var(--detail-content-h, 320px);
+}
+
+.detail-resize-handle {
+  height: 4px;
+  cursor: ns-resize;
+  border-top: 2px solid var(--bg-accent);
+  background: transparent;
+  transition: border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.detail-resize-handle:hover,
+.detail-resize-handle:active {
+  border-top-color: var(--accent);
+}
+
+#detailPane {
+  /* The resize handle provides the top border; drop the pane's own. */
+  border-top: 0;
+}
+
+#detailPane.is-expanded {
+  flex: 1;
+  min-height: 0;
+}
+
+#detailPane.is-expanded .detail-tab-content {
+  flex: 1;
+  min-height: 0;
+}
+
+/* During button/Esc-driven expand transitions the pane's height is locked
+ * inline and animated; force content to fill whatever height the pane has
+ * so there's no gap below a fixed-height tab content while collapsing. */
+#detailPane.is-animating .detail-tab-content {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+#detailPane.is-expanded .detail-tab-yaml {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-tab-yaml {
+  padding: 0;
+}
+
+.detail-yaml-wrap {
+  position: relative;
+  padding: 6px 14px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.yaml-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.yaml-apply-error {
+  flex: 1;
+  color: var(--danger-text);
+  font-size: 0.7rem;
+  font-family: monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.yaml-editor {
+  flex: 1;
+  width: 100%;
+  min-height: 200px;
+  background: var(--bg-yaml-editor);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  padding: 8px;
+  resize: vertical;
+  tab-size: 2;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.yaml-editor:focus {
+  border-color: var(--accent);
+}
+
+.detail-yaml-pre {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  font-size: var(--fs-sm) !important;
+  line-height: 1.5 !important;
+  tab-size: 2;
+}
+
+.detail-tab-empty {
+  color: var(--text-placeholder);
+  font-size: var(--fs-md);
+  font-family: var(--font-sans);
+}
+
+.detail-events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  font-family: var(--font-mono);
+}
+
+.detail-events-table th {
+  color: var(--text-muted);
+  text-align: left;
+  padding: 0 8px 2px 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detail-events-table td {
+  color: var(--text-code-2);
+  padding: 1px 8px 1px 0;
+  vertical-align: top;
+}
+
+.detail-events-msg {
+  max-width: 520px;
+  word-break: break-word;
+}
+
+.detail-fields-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  align-items: center;
+}
+
+.detail-kv {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  font-size: 0.8rem;
+}
+
+.detail-k {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+
+.detail-v {
+  color: var(--text-code-2);
+  font-weight: 500;
+}
+
+/* Button variant — strip default <button> chrome so a clickable cross-
+ * reference reads like the plain value, with a subtle hover lift. */
+button.detail-v {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+  transition: text-decoration-color var(--dur-fast) var(--ease-out);
+}
+
+button.detail-v.is-clickable:hover {
+  color: var(--accent-soft);
+  text-decoration-color: var(--accent-soft);
+}
+
+/* Copy variant — dotted underline so it reads as "click to copy"
+ * rather than navigation. */
+button.detail-v.is-copy {
+  text-decoration-style: dotted;
+  text-decoration-color: var(--border-muted);
+}
+
+button.detail-v.is-copy:hover {
+  text-decoration-style: dotted;
+}
+
+/* Shared "copy on click" inline helper used outside the detail pane
+ * (e.g. the config About tab). Strips default button chrome and adds
+ * a dotted underline to signal the click target. */
+button.text-copy {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline dotted var(--border-muted);
+  text-underline-offset: 2px;
+}
+
+button.text-copy:hover {
+  color: var(--accent-soft);
+  text-decoration-color: var(--accent-soft);
+}
+
+/* ── Detail pane sections (Info tab) ─────────────────────────── */
+
+.detail-section {
+  margin-top: 5px;
+}
+
+.detail-section-label {
+  color: var(--text-placeholder);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2px;
+}
+
+.detail-section-table {
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.detail-section-table th {
+  color: var(--text-muted);
+  text-align: left;
+  padding: 0 12px 1px 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.detail-section-table td {
+  color: var(--text-code-2);
+  padding: 1px 12px 1px 0;
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail-section-kv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+}
+
+/* ── Hint bar ────────────────────────────────────────────────── */
+
+#hintBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.hint-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out),
+    display var(--dur-fast) var(--ease-out) allow-discrete;
+}
+
+/* Button variant — used for every clickable hint. Strip the default
+ * <button> chrome so it matches the <span> variant used for ↑↓. */
+button.hint-item {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button.hint-item:hover {
+  color: var(--text-secondary);
+}
+
+button.hint-item:hover kbd {
+  background: var(--bg-accent);
+  border-color: var(--accent);
+  color: var(--accent-softer);
+}
+
+/* Fade-in starting state — used when a hint re-appears after a media-query
+ * flip that took it out of display: none. */
+@starting-style {
+  .hint-item {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.hint-item kbd {
+  background: var(--bg-kbd);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  font-size: var(--fs-2xs);
+  font-family: monospace;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.hint-item.is-active {
+  color: var(--accent-soft);
+}
+
+.hint-item.is-active kbd {
+  background: var(--bg-accent);
+  border-color: var(--accent);
+  color: var(--accent-softer);
+}
+
+/* ── Bottom status bar (ctx / ns / connection) ──────────────── */
+
+#statusBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--statusbar-height);
+  padding: 0 12px;
+  background: var(--bg-statusbar);
+  border-top: 1px solid var(--border-statusbar);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  color: var(--text-secondary);
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Text-only clickable status item (ctx / ns) */
+button.status-item.is-clickable {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+button.status-item.is-clickable:hover {
+  color: var(--accent-soft);
+}
+
+button.status-item.is-clickable:hover .status-label {
+  color: var(--accent-soft);
+}
+
+.status-label {
+  color: var(--text-statuslabel);
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.status-conn:hover {
+  background: var(--bg-elevated);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.status-conn.is-success .status-dot {
+  background: var(--success);
+}
+.status-conn.is-warning .status-dot {
+  background: var(--warn-accent);
+}
+.status-conn.is-danger .status-dot {
+  background: var(--danger);
+}
+.status-conn.is-grey .status-dot {
+  background: var(--text-muted);
+}
+
+/* Coalesced SSE-change indicator (trailing 5s window) */
+.status-activity {
+  gap: 5px;
+  color: var(--text-muted);
+}
+.status-activity .activity-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.status-activity.is-active {
+  color: var(--text-secondary);
+}
+.status-activity.is-active .activity-dot {
+  background: var(--accent-soft);
+}
+.status-activity.is-pulse .activity-dot {
+  box-shadow: 0 0 0 0 var(--accent-soft);
+  animation: sse-pulse 1s ease-out infinite;
+}
+@keyframes sse-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent-soft) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-activity.is-pulse .activity-dot {
+    animation: none;
+  }
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+
+/* Tier-based hint bar visibility:
+ *   tier="1" always visible (search, command)
+ *   tier="2" hidden ≤1100px (refresh, logs, exec, delete)
+ *   tier="3" hidden ≤900px  (navigate, drill, back)
+ */
+@media (max-width: 1100px) {
+  .hint-item[data-tier='2'] {
+    opacity: 0;
+    transform: translateY(-4px);
+    display: none;
+  }
+}
+
+/* Tablet: ≤ 900px — narrow the sidebar shell but keep item/label metrics
+ * identical so icon/text Y-positions don't shift between breakpoints. */
+@media (max-width: 900px) {
+  #sidebar {
+    width: 200px;
+    min-width: 200px;
+  }
+
+  .topbar-brand {
+    width: 200px;
+  }
+
+  .hint-item[data-tier='3'] {
+    opacity: 0;
+    transform: translateY(-4px);
+    display: none;
+  }
+
+  .detail-events-msg {
+    max-width: 300px;
+  }
+
+  /* Collapse Scale / Restart into the ⋯ overflow menu */
+  .tier-inline {
+    opacity: 0;
+    transform: translateY(-2px);
+    display: none;
+  }
+  .tier-overflow {
+    opacity: 1;
+    transform: translateY(0);
+    display: inline-flex;
+  }
+
+  /* Keep the detail header on a single row — drop text labels on action
+   * buttons so Logs / Exec / Delete become icon-only and everything stays
+   * inline alongside the (possibly truncated) resource name. Collapses
+   * via opacity + max-width so the text → icon transition glides. */
+  .detail-actions .btn span:not(.icon) {
+    opacity: 0;
+    max-width: 0;
+    margin: 0;
+  }
+
+  .detail-actions .btn {
+    padding: 3px 5px;
+    min-width: 24px;
+    /* Span is collapsed to 0 width but still a flex child — kill the
+     * inter-child gap so the icon recenters inside the button. */
+    gap: 0;
+  }
+}
+
+/* Narrow: ≤ 700px — collapse sidebar to icons, stack detail header.
+ * Keep sidebar-item padding, icon size, and group-label box height the same
+ * as default so icons sit at the same Y as the full-width version. */
+@media (max-width: 700px) {
+  #sidebar {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  /* Keep the logo aligned with the now-48px sidebar; drop the wordmark to
+   * free space for breadcrumb/search. */
+  .topbar-brand {
+    width: 48px;
+  }
+
+  .topbar-title {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  /* Keep the label box's vertical space so items below keep their Y-offset
+   * across breakpoints. Fade the whole label (divider line on the group
+   * itself remains visible as the group-boundary indicator). */
+  .sidebar-group-label {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Center the icon in the 48px column by shifting padding-left from
+   * 12 → 15 (icon = 18px, so 15 + 9 = 24 = half of 48). Using padding
+   * instead of justify-content: center means the icon's X position
+   * drifts smoothly during the sidebar's width transition, rather
+   * than snapping to the container's mid-point on breakpoint flip. */
+  .sidebar-item {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .sidebar-item span:not(.sidebar-count):not(.sidebar-icon) {
+    opacity: 0;
+    /* Still fully collapse the text once faded so icons centre properly. */
+    flex: 0;
+    width: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-count {
+    opacity: 0;
+    width: 0;
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  /* Peek: swipe-in drawer that temporarily expands the collapsed sidebar
+   * back to its full 200px width. Uses the same width transition as the
+   * breakpoint collapse, so the animation is consistent. Labels, counts,
+   * and group titles re-fade in via the same opacity / flex rules they
+   * had at wide mode. */
+  #sidebar.is-peek-open {
+    width: 200px;
+    min-width: 200px;
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.4);
+    position: relative;
+    z-index: 50;
+  }
+
+  #sidebar.is-peek-open .sidebar-group-label {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #sidebar.is-peek-open .sidebar-item {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  #sidebar.is-peek-open .sidebar-item span:not(.sidebar-count):not(.sidebar-icon) {
+    opacity: 1;
+    flex: 1;
+    width: auto;
+    pointer-events: auto;
+  }
+
+  #sidebar.is-peek-open .sidebar-count {
+    opacity: 1;
+    width: auto;
+    min-width: 22px;
+    padding: 1px 7px;
+  }
+
+  .resource-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .resource-table td {
+    max-width: 200px;
+  }
+
+  .detail-header {
+    gap: 6px;
+  }
+
+  .badge.is-neutral,
+  .badge.is-age {
+    display: none;
+  }
+
+  .detail-events-msg {
+    max-width: 200px;
+  }
+
+  .logs-search {
+    width: 80px;
+  }
+}
+
+/* Mobile: ≤ 480px — even the 48px icon-only sidebar + topbar logo are
+ * noise at phone widths. Fade both away the same way the wordmark
+ * already collapses (opacity + max-width) so breadcrumb/search get
+ * the whole row. */
+@media (max-width: 480px) {
+  #sidebar {
+    width: 0;
+    min-width: 0;
+    padding-top: 0;
+    border-right-width: 0;
+  }
+
+  .topbar-brand {
+    width: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  .topbar-logo {
+    max-width: 0;
+    opacity: 0;
+  }
+}
+
+/* ── Command palette (vim-style) ───────────────────────────── */
+
+#cmdPalette {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: var(--bg-cmd);
+  border-top: 1px solid var(--border-strong);
+}
+
+#cmdInputRow {
+  display: flex;
+  align-items: center;
+  padding: 6px 14px;
+  gap: 6px;
+}
+
+.cmd-colon {
+  color: var(--accent-soft);
+  font-family: monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 1;
+  user-select: none;
+}
+
+#cmdInputField {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e5e7eb;
+  font-family: monospace;
+  font-size: var(--fs-lg);
+  flex: 1;
+  caret-color: var(--accent-soft);
+}
+
+#cmdInputField::placeholder {
+  color: var(--text-placeholder);
+}
+
+#cmdSuggestions {
+  border-top: 1px solid var(--border-cmd);
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.cmd-suggestion {
+  padding: 5px 20px;
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cmd-suggestion:hover,
+.cmd-suggestion.is-active {
+  background: var(--bg-kbd);
+  color: var(--accent-soft);
+}
+
+/* Mobile: ≤ 480px — tighter chrome paddings (sidebar/brand collapse is
+ * handled by the animated block above; topbar height stays constant). */
+@media (max-width: 480px) {
+  #topBar {
+    padding: 0 8px 0 0;
+    gap: 6px;
+  }
+
+  .detail-header {
+    padding: 5px 8px 0;
+  }
+
+  .detail-tabs {
+    padding: 3px 8px 0;
+  }
+
+  .detail-tab-content {
+    padding: 4px 8px;
+  }
+
+  .btn {
+    font-size: 0;
+    padding: 4px 7px;
+  }
+
+  .btn i {
+    font-size: var(--fs-md);
+  }
+}

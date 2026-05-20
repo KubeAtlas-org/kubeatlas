@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 2300" preserveAspectRatio="none" aria-hidden="true">
+  <!-- KubeAtlas poster underlay — hexagon mesh, same honeycomb as public/img/brand/og-card.svg
+       (pointy-top, circumradius 34.641, width 60, row pitch 51.962). Transparent base so it
+       layers over the poster's radial-gradient surface; radial fade keeps the centre legible. -->
+  <defs>
+    <polygon id="ka-hex" points="0,-34.641 30,-17.321 30,17.321 0,34.641 -30,17.321 -30,-17.321"/>
+    <pattern id="ka-mesh" patternUnits="userSpaceOnUse" width="60" height="103.923">
+      <g fill="none" stroke="#1a2138" stroke-width="1.2" stroke-linejoin="round">
+        <use href="#ka-hex" x="0"   y="0"/>
+        <use href="#ka-hex" x="60"  y="0"/>
+        <use href="#ka-hex" x="0"   y="103.923"/>
+        <use href="#ka-hex" x="60"  y="103.923"/>
+        <use href="#ka-hex" x="30"  y="51.962"/>
+        <use href="#ka-hex" x="-30" y="51.962"/>
+        <use href="#ka-hex" x="90"  y="51.962"/>
+        <use href="#ka-hex" x="30"  y="-51.962"/>
+        <use href="#ka-hex" x="30"  y="155.885"/>
+      </g>
+    </pattern>
+    <radialGradient id="ka-fade" cx="50%" cy="40%" r="78%">
+      <stop offset="0%"   stop-color="#fff" stop-opacity="1"/>
+      <stop offset="58%"  stop-color="#fff" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0.10"/>
+    </radialGradient>
+    <mask id="ka-meshmask">
+      <rect width="1400" height="2300" fill="url(#ka-fade)"/>
+    </mask>
+  </defs>
+
+  <rect width="1400" height="2300" fill="url(#ka-mesh)" opacity="0.5" mask="url(#ka-meshmask)"/>
+</svg>

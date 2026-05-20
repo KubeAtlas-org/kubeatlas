@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 80" width="350" height="80" role="img" aria-label="kubeatlas">
+  <title>kubeatlas lockup (dark surface)</title>
+  <desc>Hexagon mesh icon with lowercase kubeatlas wordmark, for dark backgrounds. Matches og-card.png.</desc>
+  <g transform="translate(8 8)">
+    <g stroke="#4d82ff" fill="none" stroke-width="2.2" stroke-dasharray="2 5" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="32.0,10.0 51.053,21.0 51.053,43.0 32.0,54.0 12.947,43.0 12.947,21.0"/>
+      <line x1="32.0" y1="10.0" x2="32.0" y2="54.0"/>
+      <line x1="51.053" y1="21.0" x2="12.947" y2="43.0"/>
+      <line x1="51.053" y1="43.0" x2="12.947" y2="21.0"/>
+    </g>
+    <circle cx="32.0" cy="10.0" r="4.0" fill="#4d82ff"/>
+    <circle cx="51.053" cy="21.0" r="4.0" fill="#7C4DFF"/>
+    <circle cx="51.053" cy="43.0" r="4.0" fill="#7C4DFF"/>
+    <circle cx="32.0" cy="54.0" r="4.0" fill="#26C6A6"/>
+    <circle cx="12.947" cy="43.0" r="4.0" fill="#00BCD4"/>
+    <circle cx="12.947" cy="21.0" r="4.0" fill="#00BCD4"/>
+    <circle cx="32.0" cy="32.0" r="4.0" fill="#26C6A6"/>
+  </g>
+  <text x="92" y="54" font-family="Inter, 'Helvetica Neue', Arial, system-ui, sans-serif" font-size="52" font-weight="800" letter-spacing="-1.1">
+    <tspan fill="#ffffff">kube</tspan><tspan fill="#5b8cff">atlas</tspan>
+  </text>
+</svg>

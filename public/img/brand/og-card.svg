@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="KubeAtlas — See your whole Kubernetes cluster at a glance.">
+  <title>KubeAtlas social card</title>
+  <desc>Hexagon-mesh dark surface with the KubeAtlas mesh mark, lowercase kubeatlas wordmark, and the tagline "See your whole Kubernetes cluster at a glance." Vector variant of og-card.png.</desc>
+
+  <defs>
+    <!-- pointy-top hexagon, circumradius s = 34.641, width = 60 -->
+    <polygon id="ka-hex" points="0,-34.641 30,-17.321 30,17.321 0,34.641 -30,17.321 -30,-17.321"/>
+    <pattern id="ka-mesh" patternUnits="userSpaceOnUse" width="60" height="103.923" patternTransform="translate(34 -7)">
+      <g fill="none" stroke="#1b2230" stroke-width="1" stroke-linejoin="round" opacity="0.55">
+        <use href="#ka-hex" x="0"  y="0"/>
+        <use href="#ka-hex" x="60" y="0"/>
+        <use href="#ka-hex" x="0"  y="103.923"/>
+        <use href="#ka-hex" x="60" y="103.923"/>
+        <use href="#ka-hex" x="30" y="51.962"/>
+        <use href="#ka-hex" x="-30" y="51.962"/>
+        <use href="#ka-hex" x="90" y="51.962"/>
+        <use href="#ka-hex" x="30" y="-51.962"/>
+        <use href="#ka-hex" x="30" y="155.885"/>
+      </g>
+    </pattern>
+  </defs>
+
+  <!-- surface -->
+  <rect width="1200" height="630" fill="#0d1117"/>
+  <rect width="1200" height="630" fill="url(#ka-mesh)"/>
+
+  <!-- mesh mark (dark-surface palette: #4d82ff) -->
+  <g transform="translate(254.251 160.391) scale(3.1015)" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke="#4d82ff" fill="none">
+      <polygon points="32.0,10.0 51.053,21.0 51.053,43.0 32.0,54.0 12.947,43.0 12.947,21.0" stroke-width="1.8" stroke-dasharray="3 1.4"/>
+      <g stroke-width="1.4" stroke-dasharray="3 1.4" opacity="0.7">
+        <line x1="32.0" y1="10.0" x2="32.0" y2="54.0"/>
+        <line x1="51.053" y1="21.0" x2="12.947" y2="43.0"/>
+        <line x1="51.053" y1="43.0" x2="12.947" y2="21.0"/>
+      </g>
+    </g>
+    <circle cx="32.0" cy="10.0" r="4.0" fill="#4d82ff"/>
+    <circle cx="51.053" cy="21.0" r="4.0" fill="#7C4DFF"/>
+    <circle cx="51.053" cy="43.0" r="4.0" fill="#7C4DFF"/>
+    <circle cx="32.0" cy="54.0" r="4.0" fill="#26C6A6"/>
+    <circle cx="12.947" cy="43.0" r="4.0" fill="#00BCD4"/>
+    <circle cx="12.947" cy="21.0" r="4.0" fill="#00BCD4"/>
+    <circle cx="32.0" cy="32.0" r="4.0" fill="#26C6A6"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="501" y="294" font-family="Inter, 'Helvetica Neue', Arial, system-ui, sans-serif" font-size="95" font-weight="800" letter-spacing="-2">
+    <tspan fill="#ffffff">kube</tspan><tspan fill="#5b8cff">atlas</tspan>
+  </text>
+
+  <!-- tagline -->
+  <text x="600" y="460" text-anchor="middle" font-family="Inter, 'Helvetica Neue', Arial, system-ui, sans-serif" font-size="34" font-weight="600" letter-spacing="-0.3" fill="#8a95a8">See your whole Kubernetes cluster at a glance.</text>
+</svg>

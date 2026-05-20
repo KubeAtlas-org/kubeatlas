@@ -1,0 +1,46 @@
+<!-- Namespace-wide events dialog — invoked via :events palette command -->
+<div
+  class="overlay"
+  x-data="eventsDialog"
+  x-show="showEventsDialog"
+  x-cloak
+  @click.self="showEventsDialog = false"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="overlay-panel is-wide" @click.stop>
+    <header class="overlay-header">
+      <span class="overlay-title" x-text="`Events — namespace: ${namespace}`"></span>
+      <button class="btn is-xs is-ghost" @click="showEventsDialog = false" aria-label="Close">
+        <svg class="icon" aria-hidden="true"><use :href="iconAction('x')"></use></svg>
+      </button>
+    </header>
+    <div class="overlay-body">
+      <template x-if="events && events.length > 0">
+        <table class="overlay-table">
+          <thead>
+            <tr>
+              <th>Reason</th>
+              <th>Time</th>
+              <th>Message</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="event in events" :key="event.metadata.uid">
+              <tr>
+                <td :class="rowClass(event)" x-text="event.reason"></td>
+                <td :class="rowClass(event)" x-text="niceDate(event)"></td>
+                <td :class="rowClass(event)" x-text="event.message"></td>
+                <td :class="rowClass(event)" x-text="event.count"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </template>
+      <template x-if="!events || events.length === 0">
+        <div class="overlay-empty">No events</div>
+      </template>
+    </div>
+  </div>
+</div>

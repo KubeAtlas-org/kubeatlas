@@ -1,0 +1,69 @@
+# Lucide icon manifest — vendored into public/ext/icons/sprite-lucide.svg.
+# One name per line, comments start with `#`, blank lines OK.
+#
+# Each name becomes a <symbol id="i-<name>"> in the sprite, referenced from
+# HTML as `<svg><use href="/public/ext/icons/sprite-lucide.svg#i-<name>" /></svg>`.
+# CSS recolors via `color:` because Lucide SVGs use `stroke="currentColor"`.
+
+# ── Resource kinds — see docs/branding_requirements.md §2.3 (Lucide column)
+box                    # Pod
+layers                 # Deployment
+boxes                  # ReplicaSet
+database               # StatefulSet
+server-cog             # DaemonSet
+briefcase              # Job
+timer                  # CronJob
+gauge                  # HorizontalPodAutoscaler
+file-cog               # ConfigMap
+key-round              # Secret
+hard-drive             # PersistentVolume
+hard-drive-download    # PersistentVolumeClaim
+disc                   # StorageClass
+network                # Service
+globe                  # Ingress
+shield                 # NetworkPolicy
+cable                  # Endpoints / EndpointSlice
+server                 # Node
+folder                 # Namespace
+bell                   # Event (and Events tab in detail pane)
+user-circle            # ServiceAccount
+shield-check           # Role
+shield-alert           # ClusterRole
+link                   # RoleBinding
+link-2                 # ClusterRoleBinding
+puzzle                 # CustomResourceDefinition
+help-circle            # fallback / unknown kind
+
+# ── Action / UI icons — see docs/branding_requirements.md §3.2
+search                 # search / filter
+x                      # close / dismiss / cancel
+maximize-2             # expand pane / Scale
+minimize-2             # collapse pane
+copy                   # copy to clipboard
+pencil                 # edit YAML
+trash-2                # delete
+rotate-cw              # restart workload
+move-vertical          # scale (reserve, not yet wired)
+file-text              # logs
+terminal               # exec / shell
+refresh-cw             # refresh logs (reserve)
+share-2                # graph view toggle
+table                  # table view toggle (reserve)
+chevron-right          # drill into / breadcrumb forward
+chevron-left           # breadcrumb back
+chevron-up             # sort asc / collapse pane
+chevron-down           # sort desc / expand pane
+clock                  # time / age / timestamps
+info                   # info tooltip / Info tab
+# globe — already declared above (Ingress); also serves as context-switch icon
+# layers — already declared above (Deployment); also serves as namespace-switch icon
+sun                    # theme toggle (to light)
+moon                   # theme toggle (to dark)
+github                 # GitHub link
+more-horizontal        # overflow menu
+code                   # YAML view / Code tab
+crosshair              # graph focus / center
+maximize               # graph fullscreen
+history                # logs previous
+circle-dot             # graph orphans toggle
+check                  # apply YAML
