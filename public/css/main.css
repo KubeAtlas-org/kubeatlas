@@ -864,6 +864,11 @@ button.cell-ref:hover {
     max-width var(--dur-med) var(--ease-out);
 }
 
+/* Two-tone wordmark: "atlas" in the brand accent (mirrors the logo lockup). */
+.topbar-accent {
+  color: var(--accent);
+}
+
 .topbar-search {
   display: flex;
   align-items: center;
