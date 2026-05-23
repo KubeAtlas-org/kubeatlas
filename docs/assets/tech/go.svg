@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  
+  <g>
+    <text x="64" y="92" font-family="&#39;Trebuchet MS&#39;, &#39;Lucida Grande&#39;, system-ui, sans-serif" font-size="84" font-weight="800" font-style="italic" fill="#00ADD8" text-anchor="middle" letter-spacing="-3">Go</text>
+    
+    <circle cx="38" cy="46" r="3" fill="#fff"></circle>
+    <circle cx="38" cy="46" r="1.2" fill="#0d1018"></circle>
+    <circle cx="52" cy="46" r="3" fill="#fff"></circle>
+    <circle cx="52" cy="46" r="1.2" fill="#0d1018"></circle>
+  </g>
+</svg>

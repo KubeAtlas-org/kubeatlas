@@ -1,174 +1,84 @@
+<div align="center">
+
 # KubeAtlas
 
-A browser-based observability and operations tool for Kubernetes. A Go backend watches the cluster with `client-go` informers and streams live state to a vanilla-JavaScript frontend over Server-Sent Events. The frontend renders both k9s-style resource tables and a force-directed topology graph, with the same data and the same live updates underneath.
+### A real-time, interactive map for Kubernetes
 
-<p align="center">
-  <img src="docs/screenshots/app-overview.png" alt="KubeAtlas — kind sidebar, namespaced resource table, and detail pane on a live cluster" width="100%">
-</p>
+**Your cluster, on the map.** Every resource, every connection, drawn live — no polling.
+Built for operators who want to *see* the cluster, not parse it.
 
-> This repository is the **demo-day public release** — a snapshot of the project for showcase and review. It is intended as a local development companion, not a production deployment target.
+[![License: MIT](https://img.shields.io/badge/License-MIT-2962FF.svg)](LICENSE)
+![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
 
-## Features
+**[▶ View the interactive showcase](https://kubeatlas-org.github.io/kubeatlas/)**
 
-**Observe.** Real-time resource tables across 17 kinds (Pods, Deployments, ReplicaSets, StatefulSets, DaemonSets, Jobs, CronJobs, Services, Ingresses, NetworkPolicies, ConfigMaps, Secrets, PVCs, HPAs, Nodes, PersistentVolumes, Events) with live add / update / remove over SSE. A Canvas2D + d3-force topology graph encodes kind (shape), health (colour) and relationship (edge style — owner / network / mount / env-ref). Drill-down navigation with breadcrumbs, instant search across columns, a vim-style command palette, and light / dark themes.
+<img src="docs/assets/readme/plate-hero.png" alt="Your cluster, on the map — a live Kubernetes cluster drawn as namespace territories with pods, controllers and services" width="880">
 
-**Diagnose.** Multi-container pod log streaming with follow, search/highlight, previous-container and timestamp toggles. A read-only, syntax-highlighted YAML viewer (Secret / ConfigMap `data` redacted server-side). A per-resource events tab and a namespace events dialog. Pod and node CPU / memory metrics columns (requires `metrics-server`).
+**Keyboard-driven** vim-style nav · **No build step** plain ES6, one binary · **Safe by design** secrets redacted, drain excluded · **Narrow on purpose** watch · diagnose · operate
 
-**Operate.** Scale Deployments / ReplicaSets / StatefulSets; rollout restart Deployments / StatefulSets / DaemonSets; delete with a hold-to-confirm gesture; interactive web shell over WebSocket + xterm.js; in-browser YAML edit & apply; kubeconfig context switching and dynamic CRD discovery. Dangerous operations (drain, cordon, bulk delete) are deliberately excluded.
+</div>
 
-### The graph
+> This repository is the **demo-day public release** — a snapshot of the project for showcase and review. It's a local development companion, not a production deployment target.
 
-The graph view scales by zoom. At a distance, namespaces appear as labelled regions; zoom in and per-kind shapes resolve, with controllers fanning out to their pods. Click any node and the detail pane opens a full `describe` — conditions, containers, events, YAML — without leaving the view. Edge-class toggles at the top of the canvas filter by relationship (owner / network / mount / env-ref).
+---
 
-<p align="center">
-  <img src="docs/screenshots/graph-view.png" alt="KubeAtlas graph view — multiple namespace clusters on a live cluster, with edge-class filters at the top" width="100%">
-</p>
+## From text to map
 
-## Architecture at a glance
+A Kubernetes cluster is a dense graph of interdependent resources. `kubectl` shows it as flat text, one query at a time, so the relationships between Pods, Services, and config end up *living in your head*. KubeAtlas connects to the API, watches every resource, and streams every change live — drawn as one map, in your browser.
 
-One Go binary. Informers watch the API; an SSE broker fans live events to browser clients, scoped per namespace. The server is stateless on the mutation path and cache-first on reads. The only per-client state is broker group membership keyed by `clientID`.
+<div align="center">
+<img src="docs/assets/readme/plate-text-to-map.png" alt="The same cluster as kubectl flat text on the left, drawn as a live graph on the right" width="880">
+</div>
 
-```
- ┌───────────────┐   watch    ┌─────────────────────────────┐
- │ kube-apiserver│◀───────────│ client-go dynamic informers │
- └───────┬───────┘    list    │  (17 kinds, 1-min resync)   │
-         │                    └──────────────┬──────────────┘
-         │ /exec (SPDY)                      │ Add / Update / Delete
-         │ /log                              ▼
-         │                    ┌──────────────────────────────┐
-         │                    │  SSE broker (per-ns groups + │
-         │                    │  "_all_" fan-out, 10s ping)  │
-         │                    └──────────────┬───────────────┘
-         │                                   │ text/event-stream
-         ▼                                   ▼
- ┌─────────────────────────────────────────────────────────────┐
- │           Go HTTP server  (chi, :8000, 127.0.0.1)           │
- │  middleware: host-validation · X-Client-ID · slog request   │
- └─────────────────────────────────────────────────────────────┘
-                              │
-              ┌───────────────┼────────────────┐
-       SSE    │      REST     │      WebSocket │
-        ▼     ▼               ▼                ▼
- ┌─────────────────────────────────────────────────────────────┐
- │  Browser: Alpine.js · ES6 modules · no bundler              │
- │   cache.js (UID / name / IP indexes)                        │
- │    ├─▶ table.js / columns.js     (k9s-style)                │
- │    ├─▶ graph-canvas.js           (Canvas2D + d3-force)      │
- │    └─▶ exec-client.js            (xterm.js + binary WS)     │
- └─────────────────────────────────────────────────────────────┘
-```
+---
 
-## Backend
+## How to read the map
 
-Go 1.24, [chi](https://github.com/go-chi/chi) router, `client-go` dynamic informers, `log/slog` with per-request context, hot-reload via `air`. Package layout:
+KubeAtlas encodes cluster state into **shape** (kind), **colour** (health), and **edge** (relationship) — and a single semantic-zoom graph reads at three altitudes: namespace **territories**, per-kind **workloads**, and click-to-**inspect**.
 
-| Path | Responsibility |
-|------|----------------|
-| `server/main.go`               | Bootstrap: config → logging → Kubernetes service → chi router → `http.Server` |
-| `server/routes.go`             | Route registration; SPA / static handlers |
-| `server/routes_sse.go`         | `/updates` (SSE handshake) and `/api/fetch/{ns}` (group switch) |
-| `server/routes_resources.go`   | YAML get / apply, delete |
-| `server/routes_logs.go`        | Pod logs, follow mode |
-| `server/routes_metrics.go`     | `metrics.k8s.io/v1beta1` proxy |
-| `server/routes_ops.go`         | Scale, rollout restart, context switch |
-| `server/routes_crds.go`        | CRD discovery + instance listing |
-| `server/exec.go`               | WebSocket upgrade + binary frame multiplexing |
-| `server/middleware.go`         | Host validation, X-Client-ID guard, slowloris timeout |
-| `server/services/kubernetes.go`| Informer factories (namespaced + cluster-scoped), CRD registry |
-| `server/services/broker.go`    | SSE broker wrapper (namespace groups + `_all_`) |
-| `server/services/events/`      | Informer handler factories — JSON-serialize + fan out |
-| `server/services/exec.go`      | SPDY executor bridge to apiserver `/exec` |
-| `server/logging/`              | slog handler with `request_id` / `client_id` propagation |
+<div align="center">
+<img src="docs/assets/readme/plate-how-to-read.png" alt="How to read the map — shapes map to kinds, colours to health, edges to relationships; semantic zoom shows Territories, Workloads, and Inspect" width="880">
+</div>
 
-### Real-time data plane
+Explore your cluster through the layer logic. One graph, redrawn as you zoom:
+- **L1 · Territories** — namespaces collapse into labelled regions; the whole cluster at a glance.
+- **L2 · Workloads** — per-kind shapes resolve, controllers fan out to their pods, colour tracks live health.
+- **L3 · Inspect** — click any node for a full `describe` inline. No terminal, no context switch.
 
-The SSE broker is the spine of the read path:
+---
 
-1. The frontend mints a UUID `clientID` and opens `EventSource('/updates?clientID=<uuid>')`. The handshake registers the client in the broker.
-2. When the user opens a namespace, the frontend calls `GET /api/fetch/{namespace}`. The handler calls `broker.MoveClientToGroup(clientID, ns)`, so the client is now in exactly **one** namespace group plus the implicit `_all_` group.
-3. Every informer `AddFunc / UpdateFunc / DeleteFunc` (`server/services/events/events.go`) serializes the unstructured object to JSON once and calls `broker.SendToGroup(ns, ev)` followed by `broker.SendToGroup("_all_", ev)`. Cluster-scoped kinds emit only into `_all_`.
-4. A 10-second heartbeat keeps proxies and middleboxes from closing idle connections. Backpressure policy is *drop on saturated client* — there is no per-client queue, since the cache layer can resync any missed event on reconnect.
+## What you do with it
 
-### Informers & resource model
+- **See it** — cluster state and every relationship, at a glance, live.
+- **Diagnose it** — logs · `describe` · metrics · events. No terminal, no context switch.
+- **Operate it** — scale · restart · `exec`, in place. Dangerous ops (drain, cordon, bulk delete) excluded by design.
 
-Two `DynamicSharedInformerFactory` instances are wired in `services/kubernetes.go`:
+---
 
-- **Namespaced factory:** Pods, Services, Deployments, ReplicaSets, StatefulSets, DaemonSets, Jobs, CronJobs, Ingresses, NetworkPolicies, Events, HPAs, PVCs, ConfigMaps, Secrets, EndpointSlices.
-- **Cluster factory:** Nodes, PersistentVolumes.
+## Inside the binary
 
-Resync period is one minute; `WaitForCacheSync` blocks startup for up to 60 seconds. CRDs are discovered at startup via the `apiextensions` API and recorded in an in-memory registry keyed by GVR; `routes_crds.go` exposes them at `/api/crds` and `/api/crds/{group}/{version}/{resource}/{ns}`.
+One Go binary — stateless on writes, cache-first on reads:
 
-`POST /api/contexts/switch` does **not** mutate informer state in place — it tears down the whole Kubernetes service and rebuilds it (new REST client, new informers, fresh broker groups). Multi-cluster fan-in is deliberately out of scope.
+1. The browser opens an SSE stream and joins a broker group per namespace, keyed by `clientID`.
+2. `client-go` informers watch every kind; each add / update / delete is serialized once and fanned to that group.
+3. The table and graph render from one in-memory store, so both stay live — no polling, and a reconnect resyncs from cache.
+4. Mutations go over REST with an `X-Client-ID`; `exec` rides a WebSocket bridged to the API server.
 
-### HTTP endpoints
+<div align="center">
+<img src="docs/assets/readme/plate-architecture.png" alt="Architecture — Browser (Alpine.js, Canvas2D + d3-force, xterm.js) ⇄ Go server (chi router, SSE broker, client-go informers, SPDY→WebSocket exec bridge) ⇄ Kubernetes API server" width="880">
+</div>
 
-| Method | Path | Notes |
-|--------|------|-------|
-| `GET`  | `/updates` | SSE stream; requires `?clientID=<uuid>` |
-| `GET`  | `/api/namespaces` | Cluster metadata + namespace list |
-| `GET`  | `/api/fetch/{namespace}` | Snapshot + join namespace SSE group |
-| `GET`  | `/api/fetch-cluster` | Cluster-scoped snapshot (Nodes, PVs) |
-| `GET`  | `/api/logs/{namespace}/{podname}` | Logs; `?follow=true&container=&previous=&timestamps=&max=` |
-| `GET`  | `/api/resource/{namespace}/{kind}/{name}/yaml` | Export YAML (Secret/CM `data` redacted) |
-| `PUT`  | `/api/resource/{namespace}/{kind}/{name}/yaml` | Apply YAML · **requires `X-Client-ID`** |
-| `DELETE` | `/api/resources/{namespace}/{kind}/{name}` | Delete · **requires `X-Client-ID`** |
-| `GET`  | `/api/metrics/{namespace}/pods` | `metrics.k8s.io` pod proxy |
-| `GET`  | `/api/metrics/nodes` | `metrics.k8s.io` node proxy |
-| `PUT`  | `/api/resources/{namespace}/{kind}/{name}/scale` | Scale replicas · **requires `X-Client-ID`** |
-| `POST` | `/api/resources/{namespace}/{kind}/{name}/restart` | Rollout restart · **requires `X-Client-ID`** |
-| `GET`  | `/api/crds` | List discovered CRDs |
-| `GET`  | `/api/crds/{group}/{version}/{resource}/{namespace}` | List CRD instances |
-| `POST` | `/api/contexts/switch` | Rebuild service against a different kubeconfig context |
-| `GET`  | `/ws/exec/{namespace}/{pod}` | WebSocket upgrade (binary protocol below) |
+### How connections are inferred
 
-### Exec endpoint (WebSocket binary protocol)
+Edges aren't stored — KubeAtlas re-derives them on every change by reading references off each object and resolving them against the cache (by UID, name, or pod IP):
 
-`server/exec.go` defines three single-byte frame types:
+- **owns** — `ownerReferences` (controller → pod, walked up the chain); HPAs link to their `scaleTargetRef`.
+- **routes-to** — Ingress → Service (rule backends); Service → Pod, resolved through Endpoints / EndpointSlices by pod IP.
+- **mounts** — a Pod's `volumes[]` → the PVC, ConfigMap, or Secret they name.
+- **reads-from** — a container's `env[].valueFrom` → the Secret or ConfigMap key it references.
 
-| Opcode | Direction | Payload |
-|--------|-----------|---------|
-| `0x00` `frameData`   | both         | Raw PTY bytes (stdin on the way in, stdout on the way out) |
-| `0x01` `frameResize` | client→server | `uint16` LE cols, `uint16` LE rows |
-| `0x02` `frameError`  | server→client | UTF-8 error text |
-
-Bridged to the apiserver via `remotecommand.NewSPDYExecutor(...).StreamWithContext()`. A 4-slot `TerminalSizeQueue` carries resize events; closing the WebSocket EOFs the exec stdin pipe.
-
-### Log streaming
-
-`server/services/logs.go` calls `clientset.CoreV1().Pods(ns).GetLogs(...)` and copies the stream through a flushing `ResponseWriter` wrapper so the browser sees lines as they arrive. Multi-container pods select the container via `?container=`.
-
-## Frontend
-
-Plain ES6 modules — no bundler, no transpilation, no build step. Alpine.js provides reactivity; the rest is hand-rolled. Module map:
-
-| File | Role |
-|------|------|
-| `public/index.html`              | SPA shell; inline pre-CSS theme boot to avoid flash |
-| `public/js/main.js`              | Alpine root (`mainApp`) — ~80 reactive properties |
-| `public/js/events.js`            | EventSource lifecycle → `CustomEvent('kubeEvent')` |
-| `public/js/cache.js`             | In-memory store: UID / `kind:name` / IP indexes |
-| `public/js/table.js` + `columns.js` | k9s-style table; per-kind column schemas |
-| `public/js/graph-canvas.js`      | Canvas2D + d3-force; edge classes `--edge-{owner,network,mount,env}` |
-| `public/js/command-palette.js`   | Vim `:` prompt — `:ns`, `:ctx`, kind jumps |
-| `public/js/exec-client.js`       | xterm.js + binary WS framing |
-| `public/js/logs-stream.js`       | ReadableStream consumption + `<mark>` highlight |
-| `public/css/main.css`            | Design tokens (`--bg-*`, `--text-*`, `--edge-*`); `[data-theme]` switch |
-| `public/ext/`                    | Vendored: Alpine, d3-force, xterm.js, Prism (YAML), Inter, JetBrains Mono |
-
-The graph runs a continuous low-alpha d3-force simulation. Initial layout does up to 500 pre-ticks within a 350 ms budget before the reveal animation, then settles in place. Semantic-zoom LOD swaps namespace territories → workload labels → pod labels at fixed zoom thresholds; the official Kubernetes icon set is overlaid at zoom ≥ 0.28 when node count ≤ 500.
-
-## Security model
-
-KubeAtlas is **local-only by default**. The boundary is the loopback bind plus the kubeconfig user's RBAC — there is no built-in authentication.
-
-- Binds `127.0.0.1`; non-loopback binds emit a loud startup warning.
-- `hostValidationMiddleware` rejects requests whose `Host` header is not `localhost`, `127.0.0.1`, or the configured `BIND_ADDRESS` (DNS-rebinding mitigation; bypassed only when `BIND_ADDRESS=0.0.0.0`).
-- All mutating routes require an `X-Client-ID` header — the same UUID the client uses for SSE grouping.
-- `http.Server.ReadHeaderTimeout = 5s` (slowloris mitigation).
-- Secret and ConfigMap `data` fields are redacted server-side before YAML export so they cannot leak through the read path.
-
-The threat model assumes a trusted operator on a trusted machine. Do not expose KubeAtlas to a network.
-
+---
 
 ## Quick start
 
@@ -193,6 +103,53 @@ Configuration is via environment variables:
 | `LOG_FORMAT`       | `text`           | `text` (human-readable) or `json` (one event per line)      |
 | `KUBECONFIG`       | `~/.kube/config` | Standard client-go kubeconfig path                          |
 
+---
+
+## Security model
+
+KubeAtlas is **local-only by default**. The boundary is the loopback bind plus the kubeconfig user's RBAC — there is no built-in authentication. The threat model assumes a trusted operator on a trusted machine; don't expose KubeAtlas to a network.
+
+- Binds `127.0.0.1`; non-loopback binds emit a loud startup warning.
+- A host-validation middleware rejects `Host` headers other than `localhost`, `127.0.0.1`, or the configured `BIND_ADDRESS` (DNS-rebinding mitigation).
+- All mutating routes require an `X-Client-ID` header — the same UUID the client uses for SSE grouping.
+- `ReadHeaderTimeout = 5s` (slowloris mitigation).
+- Secret and ConfigMap `data` fields are redacted server-side before YAML export.
+
+---
+
+## Proof of concept
+
+Validated on two reproducible, **KWOK-simulated** clusters that seed in about a minute:
+
+- **Production-shaped** — 19 nodes, ~130 pods, StatefulSets with PVCs, sidecars, and live metrics.
+- **Fault-injected** — CrashLoop, OOMKilled, ImagePullBackOff, Pending, stuck-Terminating, and a NotReady node, each failure pinned by a label-keyed KWOK Stage so it does not self-heal during a walkthrough.
+
+Every state was verified end-to-end through the live interface. Rendering uses **Canvas2D + d3-force** with viewport culling and a uniform-grid spatial index; semantic-zoom LOD keeps the graph legible from the namespace-territory view down to individual pods.
+
+---
+
+## Tech stack
+
+**Kubernetes** · **Go** · **Alpine.js** · **d3-force** · **Canvas2D / JavaScript**
+
+`chi` · SSE · WebSocket · xterm.js · client-go · KWOK
+
+---
+
+## Conclusion
+
+> A focused, real-time visual layer over Kubernetes, built to *complement* your workflow, not replace it. A deliberately bounded scope keeps it fast and safe.
+
+---
+
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+## Special thanks
+
+KubeAtlas began as a fork of [KubeView](https://github.com/benc-uk/kubeview) by Ben Coleman, with its graph view inspired by [Obsidian](https://obsidian.md)'s.
+
+Thanks also to [k9s](https://github.com/derailed/k9s) for the minimalist take on Kubernetes management.
+
+Built as a graduation project (CENG 402 · 2025–26) at Ankara Yıldırım Beyazıt University, Department of Computer Engineering, by **Ahmet Kaan Demirci** and **Emin Salih Açıkgöz** — with thanks to our supervisor, **Asst. Prof. Mustafa Yeniad**.
