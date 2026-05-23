@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KubeAtlas — Poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="stage">
+    <div class="poster" id="poster" data-screen-label="01 KubeAtlas Poster">
+
+      <!-- ============== POSTER-WIDE DECORATION ============== -->
+      <!-- Topographic contour underlay -->
+      <svg class="contours" viewBox="0 0 1400 2240" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <radialGradient id="cVignette" cx="50%" cy="50%" r="62%">
+            <stop offset="60%" stop-color="#0a0d18" stop-opacity="0"></stop>
+            <stop offset="100%" stop-color="#000000" stop-opacity=".55"></stop>
+          </radialGradient>
+        </defs>
+        <!-- 9 large nested wavy contour rings -->
+        <g fill="none" stroke="#1a2138" stroke-width="1">
+          <path d="M -180 1180 Q 380 1080 700 1170 T 1580 1180" />
+          <path d="M -200 1320 Q 320 1200 720 1310 T 1600 1340" />
+          <path d="M -180 1460 Q 360 1340 760 1450 T 1600 1500" />
+          <path d="M -160 1600 Q 400 1480 800 1600 T 1600 1660" />
+          <path d="M -160 1740 Q 380 1620 800 1740 T 1600 1820" />
+          <path d="M -180 1880 Q 360 1760 820 1880 T 1600 1960" />
+          <path d="M -180 1020 Q 360 920 700 1020 T 1580 1020" />
+          <path d="M -180 860 Q 360 760 700 860 T 1580 860" />
+          <path d="M -180 700 Q 360 600 700 700 T 1580 700" />
+          <path d="M -180 540 Q 360 440 700 540 T 1580 540" />
+        </g>
+        <rect x="0" y="0" width="1400" height="2240" fill="url(#cVignette)"></rect>
+      </svg>
+
+      <!-- Inner hairline frame -->
+      <div class="frame"></div>
+
+      <!-- Corner crosshairs -->
+      <span class="ch ch-tl" aria-hidden="true"></span>
+      <span class="ch ch-tr" aria-hidden="true"></span>
+      <span class="ch ch-bl" aria-hidden="true"></span>
+      <span class="ch ch-br" aria-hidden="true"></span>
+
+      <!-- ============== TITLE BAR ============== -->
+      <header class="title-bar">
+        <div class="tb-center">
+          <img class="brand-lockup" src="assets/logo-kubeatlas-lockup.svg" alt="kubeatlas">
+          <div class="wm-tagline">
+            A real-time, interactive map for <b>Kubernetes</b>
+          </div>
+        </div>
+      </header>
+
+      <!-- ============== HERO PLATE ============== -->
+      <section class="hero plate">
+        <div class="plate-bar">
+          <span class="plate-num mono">I</span>
+          <span class="plate-title">The cluster, charted</span>
+          <span class="plate-coords mono">42°N · 12°E  ·  live feed</span>
+        </div>
+
+        <div class="hero-stage">
+          <!-- Graph view: pre-cropped widescreen, dark-left zone hosts slogan -->
+          <div class="hero-graph">
+            <img class="hero-shot" src="assets/hero-graph.png" alt="A live Kubernetes cluster drawn as namespace territories, with pods, controllers and services">
+          </div>
+
+          <!-- Slogan box: layered on top, top-left -->
+          <div class="hero-side">
+            <h2 class="ct-title">Your cluster,<br>on the map.</h2>
+            <div class="ct-rule"></div>
+            <p class="ct-sub">Every resource, every connection, drawn live, no polling. Built for Kubernetes operators who want to <em>see</em> the cluster, not parse it.</p>
+
+            <div class="ct-qr">
+              <img class="ct-qr-img" src="assets/qr-github.svg" alt="QR code linking to the project repository">
+              <div class="ct-qr-text">
+                <div class="ct-qr-label mono">SCAN FOR THE REPO</div>
+                <div class="ct-qr-url mono">github.com/<b>KubeAtlas-org</b>/kubeatlas</div>
+                <div class="ct-qr-meta mono">Open-sourced under MIT license.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero edge ticks -->
+          <div class="he-ticks he-top">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="he-ticks he-bottom">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== PLATE II — From text to map ============== -->
+      <section class="text2map plate">
+        <div class="plate-bar">
+          <span class="plate-num mono">II</span>
+          <span class="plate-title">From text to map</span>
+          <span class="plate-coords mono">the problem · the move</span>
+        </div>
+
+        <div class="t2m-grid">
+          <div class="t2m-side t2m-before">
+            <div class="t2m-tag mono">BEFORE  ·  kubectl</div>
+            <pre class="kubectl mono"><span class="kc-prompt">$</span> kubectl get pods -A -o wide
+<span class="kc-head">NAMESPACE     NAME                          READY   STATUS     RESTARTS   AGE   IP             NODE</span>
+checkout      checkout-api-7d9c-q4l         2/2     Running    0          3d    10.42.7.183    worker-3
+checkout      checkout-api-7d9c-x2m         2/2     Running    0          3d    10.42.7.184    worker-3
+checkout      checkout-api-7d9c-7vn         2/2     Running    0          2d    10.42.7.185    worker-5
+checkout      checkout-worker-44tp          1/1     Running    1          5d    10.42.7.190    worker-2
+checkout      checkout-worker-9hbf          0/1     <span class="kc-warn">CrashLoop</span>  6          4m    10.42.7.191    worker-2
+checkout      checkout-migrate-rd2          0/1     <span class="kc-mut">Completed</span>  0          1h    10.42.7.193    worker-5
+payments      payments-api-66bd-h2c         1/1     Running    0          7d    10.42.4.41     worker-1
+payments      payments-api-66bd-q9s         1/1     Running    0          7d    10.42.4.42     worker-1
+payments      payments-worker-2fc8-l4d      1/1     Running    0          7d    10.42.4.55     worker-1
+payments      payments-pg-0                 1/1     Running    0          7d    10.42.4.61     worker-4
+accounts      accounts-api-9ka-tp9          1/1     Running    0          6d    10.42.5.10     worker-2
+accounts      accounts-api-9ka-2gh          1/1     Running    0          6d    10.42.5.11     worker-2
+accounts      accounts-db-0                 1/1     Running    0          14d   10.42.5.21     worker-4
+catalog       catalog-api-aa1-h44           1/1     Running    0          1d    10.42.6.30     worker-5
+catalog       catalog-search-0              1/1     Running    0          1d    10.42.6.40     worker-5
+storefront    storefront-7c9-l44            1/1     Running    0          9h    10.42.8.12     worker-3
+storefront    storefront-7c9-x6m            1/1     <span class="kc-err">Pending</span>    0          9h    &lt;none&gt;         &lt;none&gt;
+monitoring    prometheus-0                  2/2     Running    1          21d   10.42.9.12     worker-4
+<span class="kc-mut">…  124 more pods, 17 kinds, 8 namespaces. answer is in here somewhere.</span></pre>
+          </div>
+
+          <div class="t2m-arrow" aria-hidden="true">
+            <svg viewBox="0 0 80 200">
+              <defs>
+                <marker id="t2mArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                  <path d="M0 0 L10 5 L0 10 z" fill="#2962FF"></path>
+                </marker>
+              </defs>
+              <path d="M10 100 H 64" stroke="#2962FF" stroke-width="2.5" fill="none" marker-end="url(#t2mArr)"></path>
+              <text x="40" y="80" text-anchor="middle" fill="#2962FF" font-size="11" font-family="JetBrains Mono" font-weight="600" letter-spacing="2">DRAW</text>
+              <text x="40" y="132" text-anchor="middle" fill="#8a93ad" font-size="9" font-family="JetBrains Mono">via informers</text>
+            </svg>
+          </div>
+
+          <div class="t2m-side t2m-after">
+            <div class="t2m-tag mono"><span class="lp-dot small"></span>AFTER  ·  KubeAtlas</div>
+            <div class="t2m-map">
+              <img src="assets/screen-galaxy.png" alt="The same cluster drawn as a live graph">
+            </div>
+          </div>
+        </div>
+
+        <p class="plate-foot">
+          A Kubernetes cluster is a dense graph of interdependent resources.
+          <code>kubectl</code> shows it as flat text, one query at a time, so
+          the relationships between Pods, Services, and config end up
+          <em>living in your head</em>. KubeAtlas connects to the API,
+          watches every resource, and streams every change live, drawn as
+          one map, in your browser.
+        </p>
+      </section>
+
+      <!-- ============== PLATE III — How to read the map ============== -->
+      <section class="legend plate">
+        <div class="plate-bar">
+          <span class="plate-num mono">III</span>
+          <span class="plate-title">How to read the map</span>
+          <span class="plate-coords mono">shape · colour · edge</span>
+        </div>
+
+        <div class="leg-grid">
+          <!-- Shapes -->
+          <div class="leg-col">
+            <div class="leg-head">SHAPE  ·  kind</div>
+            <ul class="leg-shapes">
+              <li><svg viewBox="-22 -22 44 44"><circle cx="0" cy="0" r="13" class="lg"></circle></svg><span>Pod</span></li>
+              <li><svg viewBox="-22 -22 44 44"><rect x="-13" y="-13" width="26" height="26" rx="6" class="lg"></rect></svg><span>Deployment · ReplicaSet · StatefulSet · DaemonSet</span></li>
+              <li><svg viewBox="-22 -22 44 44"><polygon points="0,-14 14,0 0,14 -14,0" class="lg"></polygon></svg><span>Job · CronJob</span></li>
+              <li><svg viewBox="-22 -22 44 44"><polygon points="0,-14 13,10 -13,10" class="lg"></polygon></svg><span>Service</span></li>
+              <li><svg viewBox="-22 -22 44 44"><polygon points="0,14 13,-10 -13,-10" class="lg"></polygon></svg><span>Ingress</span></li>
+              <li><svg viewBox="-22 -22 44 44"><polygon points="11.3,6.5 0,13 -11.3,6.5 -11.3,-6.5 0,-13 11.3,-6.5" class="lg"></polygon></svg><span>Node (large) · Secret (small)</span></li>
+              <li><svg viewBox="-22 -22 44 44"><rect x="-12" y="-12" width="24" height="24" class="lg"></rect></svg><span>ConfigMap</span></li>
+            </ul>
+          </div>
+
+          <!-- Colours -->
+          <div class="leg-col">
+            <div class="leg-head">COLOUR  ·  health</div>
+            <ul class="leg-colors">
+              <li><span class="cs ok"></span><div><b>Healthy</b><em>Running · Ready · Succeeded</em></div></li>
+              <li><span class="cs warn"></span><div><b>Warning</b><em>Pending · Restarting · Throttled</em></div></li>
+              <li><span class="cs err"></span><div><b>Error</b><em>CrashLoop · OOMKilled · Failed</em></div></li>
+              <li><span class="cs unk"></span><div><b>Other</b><em>Completed · Unknown · NotReady</em></div></li>
+            </ul>
+
+            <div class="leg-head leg-head-2">EDGE  ·  relationship</div>
+            <ul class="leg-edges">
+              <li><svg viewBox="0 0 80 16"><path d="M2 8 H78" stroke="#5b8cff" stroke-width="2" fill="none"></path></svg><span><b>owns</b>, controller → pod</span></li>
+              <li><svg viewBox="0 0 80 16"><path d="M2 8 H78" stroke="#22d3ee" stroke-width="2" fill="none" stroke-dasharray="6 4"></path></svg><span><b>routes-to</b>, Service / Ingress</span></li>
+              <li><svg viewBox="0 0 80 16"><path d="M2 8 H78" stroke="#f59e0b" stroke-width="2" fill="none" stroke-dasharray="2 3"></path></svg><span><b>mounts</b>, PVC / volume</span></li>
+              <li><svg viewBox="0 0 80 16"><path d="M2 8 H78" stroke="#8b5cf6" stroke-width="2" fill="none" stroke-dasharray="1 4"></path></svg><span><b>reads-from</b>, ConfigMap / Secret</span></li>
+            </ul>
+          </div>
+
+          <!-- Three altitudes shown as a film strip -->
+          <div class="leg-col leg-altitudes">
+            <div class="leg-head">SEMANTIC ZOOM  ·  one graph, three altitudes</div>
+
+            <div class="alt-strip">
+              <div class="alt-row">
+                <div class="alt-thumb t-l1"><img src="assets/screen-territories.png" alt=""></div>
+                <div class="alt-meta">
+                  <div class="alt-num mono">L1</div>
+                  <h5>Territories</h5>
+                  <p>Zoom out, namespaces become labelled regions; the whole cluster at a glance.</p>
+                </div>
+              </div>
+              <div class="alt-row">
+                <div class="alt-thumb t-l2"><img src="assets/screen-workloads.png" alt=""></div>
+                <div class="alt-meta">
+                  <div class="alt-num mono">L2</div>
+                  <h5>Workloads</h5>
+                  <p>Zoom in, per-kind shapes; fan-out controllers → pods; colour = live health.</p>
+                </div>
+              </div>
+              <div class="alt-row">
+                <div class="alt-thumb t-l3">
+                  <div class="mini-ip mono">
+                    <div class="mip-tabs"><span class="active">describe</span><span>yaml</span><span>events</span></div>
+                    <div class="mip-body">
+<span><span class="k">Name:</span> checkout-api-7d9c</span>
+<span><span class="k">Status:</span> <span class="ok">Running</span> · 2/2</span>
+<span><span class="k">Mounts:</span> cm/cfg · sec/db</span>
+<span><span class="k">Routed:</span> svc/checkout</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="alt-meta">
+                  <div class="alt-num mono">L3</div>
+                  <h5>Inspect</h5>
+                  <p>Click any node, full <code>describe</code>, inline. No terminal, no context switch.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== PLATE IV — Inside the binary (architecture) ============== -->
+      <section class="inside plate">
+        <div class="plate-bar">
+          <span class="plate-num mono">IV</span>
+          <span class="plate-title">Inside the binary</span>
+          <span class="plate-coords mono">browser ⇄ go ⇄ k8s</span>
+        </div>
+
+        <div class="inside-grid">
+          <div class="arch-wrap">
+            <img class="arch-k8s-mark" src="assets/tech/kubernetes.svg" alt="" aria-hidden="true">
+            <img class="arch-diagram" src="assets/architecture-dark.svg" alt="Architecture diagram — Browser, Go server with chi router, SSE broker and client-go informers, Kubernetes API">
+            <p class="caption">
+              One Go binary. Informers watch the API; an SSE broker fans live
+              events to browser clients, scoped per namespace.
+            </p>
+          </div>
+
+          <aside class="inside-side">
+            <div class="iside-head">What you actually do with it</div>
+            <ul class="outcomes">
+              <li>
+                <span class="oc-tag">See it</span>
+                <span class="oc-text">Cluster state and every relationship, at a glance, live.</span>
+              </li>
+              <li>
+                <span class="oc-tag">Diagnose it</span>
+                <span class="oc-text">Logs · <code>describe</code> · metrics · events. No terminal, no context switch.</span>
+              </li>
+              <li>
+                <span class="oc-tag">Operate it</span>
+                <span class="oc-text">Scale · restart · <code>exec</code>, in place. Dangerous ops excluded by design.</span>
+              </li>
+            </ul>
+
+            <div class="iside-head iside-head-2">Why this works</div>
+            <div class="why-grid">
+              <div class="why">
+                <span class="why-glyph mono">⌘</span>
+                <div><b>Keyboard-driven</b><em>vim-style nav · <code>:</code> palette</em></div>
+              </div>
+              <div class="why">
+                <span class="why-glyph mono">∅</span>
+                <div><b>No build step</b><em>plain ES6 · one binary</em></div>
+              </div>
+              <div class="why">
+                <span class="why-glyph mono">⇄</span>
+                <div><b>Safe by design</b><em>secrets redacted · drain excluded</em></div>
+              </div>
+              <div class="why">
+                <span class="why-glyph mono">◎</span>
+                <div><b>Narrow on purpose</b><em>watch · diagnose · operate</em></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============== PLATE V — Proof & Conclusion ============== -->
+      <section class="closing plate">
+        <div class="plate-bar">
+          <span class="plate-num mono">V</span>
+          <span class="plate-title">Proof &amp; conclusion</span>
+          <span class="plate-coords mono">verified · bounded</span>
+        </div>
+
+        <div class="closing-grid">
+          <div class="proof">
+            <h5 class="cl-h">Proof of concept</h5>
+            <p class="body">
+              Validated on two reproducible, <b>KWOK-simulated</b> clusters
+              that seed in about a minute. One is <b>production-shaped</b>:
+              19 nodes, ~130 pods, StatefulSets with PVCs, sidecars, and live
+              metrics. The other is <b>fault-injected</b>: CrashLoop,
+              OOMKilled, ImagePullBackOff, Pending, stuck-Terminating, and a
+              NotReady node, each failure pinned by a label-keyed KWOK Stage
+              so it does not self-heal during a walkthrough. Every state was
+              verified end-to-end through the live interface.
+            </p>
+
+            <p class="caption">
+              Canvas2D + d3-force with viewport culling and a uniform-grid
+              spatial index; semantic-zoom LOD keeps the graph legible from
+              the namespace-territory view down to individual pods.
+            </p>
+          </div>
+
+          <div class="conclusion">
+            <h5 class="cl-h">Conclusion</h5>
+            <blockquote class="quote">
+              A focused, real-time visual layer over Kubernetes, built to
+              <em>complement</em> your workflow, not replace it. A deliberately
+              bounded scope keeps it fast and safe.
+            </blockquote>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+<script>
+  (function () {
+    const W = 1400, H = 2240;
+    const el = document.getElementById('poster');
+    const stage = document.querySelector('.stage');
+    function fit () {
+      // Scale to the viewport width (never upscale past native), anchor to
+      // the top, and grow the stage so the page scrolls vertically.
+      const vw = document.documentElement.clientWidth;
+      const s = Math.min(vw / W, 1);
+      el.style.transform = 'translateX(-50%) scale(' + s + ')';
+      stage.style.height = (H * s) + 'px';
+    }
+    fit();
+    window.addEventListener('resize', fit);
+  })();
+</script>
+</body>
+</html>
