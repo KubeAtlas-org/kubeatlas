@@ -5,7 +5,7 @@
 ### A real-time, interactive map for Kubernetes
 
 **Your cluster, on the map.** Every resource, every connection, drawn live — no polling.
-A focused visual layer for operators who want to *see* the cluster, not parse it — deliberately bounded to stay fast and safe.
+Built for operators who want to *see* the cluster, not parse it.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-2962FF.svg)](LICENSE)
 ![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)
@@ -134,6 +134,12 @@ Every state was verified end-to-end through the live interface. Rendering uses *
 **Kubernetes** · **Go** · **Alpine.js** · **d3-force** · **Canvas2D / JavaScript**
 
 `chi` · SSE · WebSocket · xterm.js · client-go · KWOK
+
+---
+
+## Conclusion
+
+> A focused, real-time visual layer over Kubernetes, built to *complement* your workflow, not replace it. A deliberately bounded scope keeps it fast and safe.
 
 ---
 
