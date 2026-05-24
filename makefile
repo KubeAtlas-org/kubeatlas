@@ -10,7 +10,8 @@ BUILD_OS   ?= $(shell go env GOOS)
 BUILD_ARCH ?= $(shell go env GOARCH)
 
 .EXPORT_ALL_VARIABLES:
-.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot brand-png
+.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot brand-png \
+        seed-large-prod seed-large-incident teardown-large-prod teardown-large-incident
 
 # Name of the throwaway KWOK cluster used by `make dev`.
 DEV_CLUSTER ?= kubeatlas-dev
@@ -71,6 +72,22 @@ dev: ## 🧪 Bring up a KWOK cluster and run the dev server (zero host setup)
 dev-down: ## 🧹 Delete the KWOK dev cluster
 	@figlet $@ || true
 	@kwokctl delete cluster --name "$(DEV_CLUSTER)" 2>/dev/null || true
+
+seed-large-prod: ## 🏭 Provision kubeatlas-test-large-prod (kwok, realistic ~19n/190p)
+	@figlet $@ || true
+	@bash .dev/seed-large-prod.sh
+
+seed-large-incident: ## 🔥 Provision kubeatlas-test-large-incident (kwok, ~6n/28p broken — diagnostic demo)
+	@figlet $@ || true
+	@bash .dev/seed-large-incident.sh
+
+teardown-large-prod: ## ❌ Tear down kubeatlas-test-large-prod
+	@figlet $@ || true
+	@bash .dev/teardown-large-prod.sh
+
+teardown-large-incident: ## ❌ Tear down kubeatlas-test-large-incident
+	@figlet $@ || true
+	@bash .dev/teardown-large-incident.sh
 
 release-snapshot: ## 📦 Cross-compile a local release snapshot via GoReleaser (no publish)
 	@figlet $@ || true

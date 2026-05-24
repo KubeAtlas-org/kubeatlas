@@ -1,0 +1,382 @@
+# kwok lifecycle stages for kubeatlas-test-large-incident.
+#
+# Loaded via `kwokctl ... -c` (NOT --enable-crds Stage). Because this file
+# supplies Pod *and* Node stages, kwok uses ONLY these — its bundled defaults
+# are fully replaced. Every state is pinned by a label selector
+# (incident.kubeatlas/state on pods, incident.kubeatlas/node on nodes) so a
+# pod/node lands in exactly one stage and STAYS there: no flapping, no
+# self-heal, deterministic across a live demo.
+#
+#   (no label)            → healthy, Running / Node Ready  (baseline contrast)
+#   state=crashloop       → CrashLoopBackOff, restartCount 47
+#   state=oom             → Running but last terminated OOMKilled, restarts
+#   state=imagepull       → ImagePullBackOff
+#   state=failedjob       → phase Failed, exitCode 1
+#   state=completed       → phase Succeeded (healthy CronJob run)
+#   state=terminating     → set Running; seed then deletes it, a finalizer
+#                           pins it in Terminating forever
+#   state=pending         → no stage matches → stays Pending (unschedulable)
+#   node label=down       → no node stage matches → stays NotReady
+# ============================================================================
+
+# --- Healthy nodes: kwok's node-initialize, scoped to un-labelled nodes ------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: node-healthy
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Node
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/node"]'
+        operator: 'DoesNotExist'
+      - key: '.status.conditions.[] | select( .type == "Ready" ) | .status'
+        operator: 'NotIn'
+        values: ['True']
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      {{ $lastTransitionTime := or .metadata.creationTimestamp $now }}
+      conditions:
+      {{ range NodeConditions }}
+      - lastHeartbeatTime: {{ $now | Quote }}
+        lastTransitionTime: {{ $lastTransitionTime | Quote }}
+        message: {{ .message | Quote }}
+        reason: {{ .reason | Quote }}
+        status: {{ .status | Quote }}
+        type: {{ .type | Quote }}
+      {{ end }}
+      addresses:
+      {{ with .status.addresses }}
+      {{ YAML . 1 }}
+      {{ else }}
+      {{ with NodeIP }}
+      - address: {{ . | Quote }}
+        type: InternalIP
+      {{ end }}
+      {{ with NodeName }}
+      - address: {{ . | Quote }}
+        type: Hostname
+      {{ end }}
+      {{ end }}
+      {{ with NodePort }}
+      daemonEndpoints:
+        kubeletEndpoint:
+          Port: {{ . }}
+      {{ end }}
+      allocatable:
+      {{ with .status.allocatable }}
+      {{ YAML . 1 }}
+      {{ else }}
+        cpu: 1k
+        memory: 1Ti
+        pods: 1M
+      {{ end }}
+      capacity:
+      {{ with .status.capacity }}
+      {{ YAML . 1 }}
+      {{ else }}
+        cpu: 1k
+        memory: 1Ti
+        pods: 1M
+      {{ end }}
+      {{ $nodeInfo := .status.nodeInfo }}
+      {{ $kwokVersion := printf "kwok-%s" Version }}
+      nodeInfo:
+        architecture: {{ or $nodeInfo.architecture "amd64" }}
+        bootID: {{ or $nodeInfo.bootID `""` }}
+        containerRuntimeVersion: {{ or $nodeInfo.containerRuntimeVersion $kwokVersion }}
+        kernelVersion: {{ or $nodeInfo.kernelVersion $kwokVersion }}
+        kubeProxyVersion: {{ or $nodeInfo.kubeProxyVersion $kwokVersion }}
+        kubeletVersion: {{ or $nodeInfo.kubeletVersion $kwokVersion }}
+        machineID: {{ or $nodeInfo.machineID `""` }}
+        operatingSystem: {{ or $nodeInfo.operatingSystem "linux" }}
+        osImage: {{ or $nodeInfo.osImage `""` }}
+        systemUUID: {{ or $nodeInfo.systemUUID `""` }}
+      phase: Running
+---
+# --- Healthy pods: kwok's pod-ready, scoped to un-labelled pods --------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-healthy
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'DoesNotExist'
+      - key: '.metadata.deletionTimestamp'
+        operator: 'DoesNotExist'
+      - key: '.status.podIP'
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      conditions:
+      - lastTransitionTime: {{ $now | Quote }}
+        status: "True"
+        type: Initialized
+      - lastTransitionTime: {{ $now | Quote }}
+        status: "True"
+        type: Ready
+      - lastTransitionTime: {{ $now | Quote }}
+        status: "True"
+        type: ContainersReady
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: true
+        restartCount: 0
+        state:
+          running:
+            startedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      podIP: {{ PodIPWith .spec.nodeName ( or .spec.hostNetwork false ) ( or .metadata.uid "" ) ( or .metadata.name "" ) ( or .metadata.namespace "" ) | Quote }}
+      phase: Running
+      startTime: {{ $now | Quote }}
+---
+# --- CrashLoopBackOff --------------------------------------------------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-crashloop
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['crashloop']
+      # One-shot latch: fire once on a fresh pod (no containerStatuses yet),
+      # then stop matching. Without this the {{ Now }} timestamps below make
+      # every re-render differ, so kwok re-patches the pod forever — a
+      # cluster-wide apiserver/etcd write storm on a "static" broken pod.
+      - key: '.status.containerStatuses'
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      conditions:
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True",  type: Initialized }
+      - { lastTransitionTime: {{ $now | Quote }}, status: "False", type: Ready, reason: ContainersNotReady }
+      - { lastTransitionTime: {{ $now | Quote }}, status: "False", type: ContainersReady, reason: ContainersNotReady }
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: false
+        restartCount: 47
+        state:
+          waiting:
+            reason: CrashLoopBackOff
+            message: "back-off 5m0s restarting failed container={{ .name }} pod=crash"
+        lastState:
+          terminated:
+            exitCode: 1
+            reason: Error
+            startedAt: {{ $now | Quote }}
+            finishedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      podIP: {{ PodIPWith .spec.nodeName false ( or .metadata.uid "" ) ( or .metadata.name "" ) ( or .metadata.namespace "" ) | Quote }}
+      phase: Running
+      startTime: {{ $now | Quote }}
+---
+# --- OOMKilled (running again, but visible OOM history) ----------------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-oom
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['oom']
+      - key: '.status.containerStatuses'   # one-shot latch (see pod-crashloop)
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      conditions:
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True", type: Initialized }
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True", type: Ready }
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True", type: ContainersReady }
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: true
+        restartCount: 12
+        state:
+          running:
+            startedAt: {{ $now | Quote }}
+        lastState:
+          terminated:
+            exitCode: 137
+            reason: OOMKilled
+            startedAt: {{ $now | Quote }}
+            finishedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      podIP: {{ PodIPWith .spec.nodeName false ( or .metadata.uid "" ) ( or .metadata.name "" ) ( or .metadata.namespace "" ) | Quote }}
+      phase: Running
+      startTime: {{ $now | Quote }}
+---
+# --- ImagePullBackOff --------------------------------------------------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-imagepull
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['imagepull']
+      - key: '.status.containerStatuses'   # one-shot latch (see pod-crashloop)
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      conditions:
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True",  type: Initialized }
+      - { lastTransitionTime: {{ $now | Quote }}, status: "False", type: Ready, reason: ContainersNotReady }
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: false
+        restartCount: 0
+        state:
+          waiting:
+            reason: ImagePullBackOff
+            message: "Back-off pulling image {{ .image }}"
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      phase: Pending
+      startTime: {{ $now | Quote }}
+---
+# --- Failed Job --------------------------------------------------------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-failedjob
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['failedjob']
+      - key: '.status.containerStatuses'   # one-shot latch (see pod-crashloop)
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: false
+        restartCount: 6
+        state:
+          terminated:
+            exitCode: 1
+            reason: Error
+            startedAt: {{ $now | Quote }}
+            finishedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      phase: Failed
+      startTime: {{ $now | Quote }}
+---
+# --- Completed Job (healthy CronJob run, for contrast) -----------------------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-completed
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['completed']
+      - key: '.status.containerStatuses'   # one-shot latch (see pod-crashloop)
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: false
+        restartCount: 0
+        state:
+          terminated:
+            exitCode: 0
+            reason: Completed
+            startedAt: {{ $now | Quote }}
+            finishedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      phase: Succeeded
+      startTime: {{ $now | Quote }}
+---
+# --- Terminating: mark Running so the seed can delete it; the finalizer then
+#     pins it in Terminating (no delete stage exists to remove it). ----------
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: Stage
+metadata:
+  name: pod-terminating-pre
+spec:
+  resourceRef:
+    apiGroup: v1
+    kind: Pod
+  selector:
+    matchExpressions:
+      - key: '.metadata.labels["incident.kubeatlas/state"]'
+        operator: 'In'
+        values: ['terminating']
+      - key: '.metadata.deletionTimestamp'
+        operator: 'DoesNotExist'
+  next:
+    statusTemplate: |
+      {{ $now := Now }}
+      conditions:
+      - { lastTransitionTime: {{ $now | Quote }}, status: "True", type: Ready }
+      containerStatuses:
+      {{ range .spec.containers }}
+      - image: {{ .image | Quote }}
+        name: {{ .name | Quote }}
+        ready: true
+        restartCount: 0
+        state:
+          running:
+            startedAt: {{ $now | Quote }}
+      {{ end }}
+      hostIP: {{ NodeIPWith .spec.nodeName | Quote }}
+      podIP: {{ PodIPWith .spec.nodeName false ( or .metadata.uid "" ) ( or .metadata.name "" ) ( or .metadata.namespace "" ) | Quote }}
+      phase: Running
+      startTime: {{ $now | Quote }}

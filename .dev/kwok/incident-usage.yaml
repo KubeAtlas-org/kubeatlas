@@ -1,0 +1,12 @@
+# Flat simulated usage for kubeatlas-test-large-incident so metrics columns
+# aren't blank in the demo. Broken pods that never run still report ~0 (kwok
+# only meters Running containers), which is itself a useful diagnostic signal.
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: ClusterResourceUsage
+metadata:
+  name: usage-all
+spec:
+  usages:
+    - usage:
+        cpu:    { value: "120m" }
+        memory: { value: "192Mi" }
