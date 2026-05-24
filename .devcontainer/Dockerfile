@@ -8,10 +8,12 @@ FROM mcr.microsoft.com/devcontainers/go:1.24-bookworm
 ENV KWOK_VERSION=v0.7.0 \
     KUBECTL_VERSION=v1.31.0
 
-# figlet is used by the makefile's banner targets (it tolerates its absence,
-# but having it keeps `make` output identical to local dev).
+# figlet — makefile banner targets (tolerates absence, kept for identical output).
+# librsvg2-bin (rsvg-convert) + imagemagick + python3-fonttools/-brotli — the
+# `make brand-png` raster pipeline, so it runs inside the container too.
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get install -y --no-install-recommends figlet \
+    && apt-get install -y --no-install-recommends \
+        figlet librsvg2-bin imagemagick python3 python3-fonttools python3-brotli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # kubectl + KWOK (kwok/kwokctl), architecture-aware so the image builds on
