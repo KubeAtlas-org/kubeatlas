@@ -27,7 +27,10 @@ lint-fix: ## ✨ Lint & try to format & fix
 
 run: ## 🏃 Run application, used for local development
 	@figlet $@ || true
-	@go tool -modfile=.dev/tools.mod air -c .dev/air.toml
+	@# STATIC_DIR makes the dev server read the frontend from public/ on disk,
+	@# so editing public/ and reloading the browser needs no rebuild. A built
+	@# binary leaves it unset and serves the embedded copy instead.
+	@STATIC_DIR=$${STATIC_DIR:-public} go tool -modfile=.dev/tools.mod air -c .dev/air.toml
 
 stop: ## 🛑 Stop THIS repo's dev server (air + tmp/main); clusters untouched
 	@figlet $@ || true

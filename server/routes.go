@@ -6,10 +6,14 @@ package main
 
 import (
 	"io"
+	"io/fs"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	kubeatlas "github.com/kubeatlas-org/kubeatlas"
 	"github.com/kubeatlas-org/kubeatlas/server/logging"
 	"github.com/kubeatlas-org/kubeatlas/server/services/events"
 )
@@ -21,13 +25,26 @@ const AllNamespacesSentinel = events.AllNamespacesGroup
 
 // All application routes are defined here
 func (s *KubeatlasAPI) AddRoutes(r *chi.Mux) {
+	// Frontend assets: serve from STATIC_DIR on disk when set (dev: live edit
+	// and reload), otherwise from the copy embedded in the binary (self-contained
+	// deployment — see embed.go at the repo root).
+	staticFS := s.staticFS()
+
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		noCache(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "public/index.html")
+			f, err := staticFS.Open("index.html")
+			if err != nil {
+				http.Error(w, "index.html not found", http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+			// Zero modtime: caching is already disabled by noCache, so skip
+			// Last-Modified / If-Modified-Since handling.
+			http.ServeContent(w, r, "index.html", time.Time{}, f.(io.ReadSeeker))
 		})).ServeHTTP(w, r)
 	})
 
-	publicFS := http.StripPrefix("/public/", noCache(http.FileServer(http.Dir("public"))))
+	publicFS := http.StripPrefix("/public/", noCache(http.FileServerFS(staticFS)))
 	r.HandleFunc("/public/*", publicFS.ServeHTTP)
 
 	// Special route for SSE streaming events to connected clients
@@ -79,6 +96,25 @@ func noCache(h http.Handler) http.Handler {
 		w.Header().Set("Pragma", "no-cache")
 		h.ServeHTTP(w, r)
 	})
+}
+
+// staticFS returns the filesystem the frontend is served from. When STATIC_DIR
+// is set it reads from that directory on disk (the dev loop: edit a file under
+// public/ and reload, no rebuild). Otherwise it returns the assets embedded in
+// the binary, making a bare `kubeatlas` deployable on its own.
+func (s *KubeatlasAPI) staticFS() fs.FS {
+	return resolveStaticFS(s.config.StaticDir, kubeatlas.PublicFS())
+}
+
+// resolveStaticFS returns the disk directory when staticDir is set, otherwise
+// the embedded filesystem. Split out from staticFS so the selection is unit
+// testable without constructing a KubeatlasAPI (which connects to a cluster).
+func resolveStaticFS(staticDir string, embedded fs.FS) fs.FS {
+	if staticDir != "" {
+		return os.DirFS(staticDir)
+	}
+
+	return embedded
 }
 
 // flushWriter wraps a ResponseWriter and flushes after every write for streaming
