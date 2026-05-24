@@ -77,6 +77,45 @@ icon 512 0.60 "$BRAND/maskable-512.png"        # ~20% safe-zone each side
 rsvg-convert -w 1200 -h 630 "$BRAND/og-card.svg" -o "$BRAND/og-card.png"
 echo "  ✓ og-card.png"
 
+# --- Lockup-stacked PNGs: native (400×400) and 2× (800×800), on panel BG ------
+# Trim SVG whitespace, then pad the vertical gap to match the internal spacing
+# between the icon and the wordmark (measured by scanning alpha rows).
+declare -A LOCKUP_BG=(
+  ["lockup-stacked-dark"]="#0d1117"
+  ["lockup-stacked-light"]="#f7f8fa"
+)
+for src in "$BRAND/lockup-stacked-dark.svg" "$BRAND/lockup-stacked-light.svg"; do
+  base="$BRAND/$(basename "$src" .svg)"
+  bg="${LOCKUP_BG[$(basename "$src" .svg)]}"
+  for s in 400 800; do
+    rsvg-convert -w "$s" -h "$s" "$src" -o "$TMP/lockup-tmp.png"
+    "$MAGICK" "$TMP/lockup-tmp.png" -trim +repage "$TMP/trimmed.png"
+    read tw th < <("$MAGICK" identify -format "%w %h" "$TMP/trimmed.png")
+    gap=$(python3 -c "
+from PIL import Image
+img = Image.open('$TMP/trimmed.png').convert('RGBA')
+h, w = img.size[1], img.size[0]
+for y in range(h):
+    row = [img.getpixel((x, y))[3] for x in range(w)]
+    if max(row) == 0:
+        first = y
+        while y < h and max([img.getpixel((x, y))[3] for x in range(w)]) == 0:
+            y += 1
+        print(y - first)
+        break
+")
+    vpad=$(( gap ))
+    "$MAGICK" "$TMP/trimmed.png" -bordercolor none -border "0x${vpad}" +repage "$TMP/vpadded.png"
+    read pw ph < <("$MAGICK" identify -format "%w %h" "$TMP/vpadded.png")
+    hpad=$(( (ph - pw) / 2 ))
+    "$MAGICK" "$TMP/vpadded.png" -bordercolor none -border "${hpad}x0" \
+      -background "$bg" -flatten \
+      -gravity center -extent "${s}x${s}" \
+      -strip -define png:exclude-chunks=date,time "${base}${s}.png"
+  done
+  echo "  ✓ $(basename "$base"){400,800}.png"
+done
+
 # --- Favicon: 16/32/48 multi-resolution .ico ---------------------------------
 for s in 16 32 48; do
   rsvg-convert -w "$s" -h "$s" "$BRAND/favicon.svg" -o "$TMP/fav-$s.png"
