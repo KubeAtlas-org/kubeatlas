@@ -58,7 +58,7 @@ Explore your cluster through the layer logic. One graph, redrawn as you zoom:
 
 ## Inside the binary
 
-One Go binary — stateless on writes, cache-first on reads:
+One Go binary — the frontend is embedded with `go:embed`, so `make build` produces a single self-contained executable you can copy to any host with a kubeconfig and run. Stateless on writes, cache-first on reads:
 
 1. The browser opens an SSE stream and joins a broker group per namespace, keyed by `clientID`.
 2. `client-go` informers watch every kind; each add / update / delete is serialized once and fanned to that group.
@@ -101,6 +101,7 @@ Configuration is via environment variables:
 | `DISABLE_POD_LOGS` | `false`          | Disable the log streaming endpoints                         |
 | `LOG_LEVEL`        | `info`           | `debug` / `info` / `warn` / `error`                         |
 | `LOG_FORMAT`       | `text`           | `text` (human-readable) or `json` (one event per line)      |
+| `STATIC_DIR`       | _empty_          | Serve the frontend from this dir on disk (dev)              |
 | `KUBECONFIG`       | `~/.kube/config` | Standard client-go kubeconfig path                          |
 
 ---

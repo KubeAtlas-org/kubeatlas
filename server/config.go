@@ -21,6 +21,7 @@ type Config struct {
 	BindAddress           string
 	LogLevel              string // debug | info | warn | error (default: info)
 	LogFormat             string // text | json (default: text)
+	StaticDir             string // serve frontend from this dir instead of the embedded copy (dev)
 }
 
 // Parse the environment variables and return a Config struct
@@ -88,6 +89,8 @@ func parseConfig(getenv func(string) string) Config {
 		logFormat = s
 	}
 
+	staticDir := getenv("STATIC_DIR")
+
 	return Config{
 		Port:                  port,
 		NameSpaceFilter:       nameSpaceFilter,
@@ -98,5 +101,6 @@ func parseConfig(getenv func(string) string) Config {
 		BindAddress:           bindAddress,
 		LogLevel:              logLevel,
 		LogFormat:             logFormat,
+		StaticDir:             staticDir,
 	}
 }
