@@ -1,0 +1,26 @@
+{
+  "name": "KubeAtlas",
+  "build": { "dockerfile": "Dockerfile" },
+
+  // Live dev server. `make dev` brings up an in-container KWOK cluster and runs air.
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "KubeAtlas", "onAutoForward": "notify" }
+  },
+
+  // Persist the Go module + build cache across container rebuilds so rebuilds
+  // stay fast during continuous development.
+  "containerEnv": { "GOPATH": "/home/vscode/go" },
+  "mounts": [
+    "source=kubeatlas-go-cache,target=/home/vscode/go,type=volume"
+  ],
+
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/go && go mod download",
+  "remoteUser": "vscode",
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["golang.go"]
+    }
+  }
+}

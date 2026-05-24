@@ -1,0 +1,53 @@
+# GoReleaser builds the cross-platform release artifacts. The binary is
+# self-contained (frontend embedded via go:embed, see embed.go), so a single
+# pure-Go build per target is all that's needed — no assets to ship alongside.
+#
+#   local snapshot : make release-snapshot
+#   real release   : push a vX.Y.Z tag (see .github/workflows/release.yml)
+version: 2
+
+project_name: kubeatlas
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: kubeatlas
+    main: ./server
+    binary: kubeatlas
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X 'main.buildInfo={{ .ShortCommit }} {{ .CommitDate }}'
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    # Windows users expect a zip.
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+
+release:
+  github:
+    owner: kubeatlas-org
+    name: kubeatlas

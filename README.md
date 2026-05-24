@@ -82,13 +82,22 @@ Edges aren't stored — KubeAtlas re-derives them on every change by reading ref
 
 ## Quick start
 
-Prerequisites: **Go ≥ 1.24** and a reachable Kubernetes cluster via your local kubeconfig.
+**Run a release binary** — grab the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) (linux / macOS / Windows × amd64 / arm64), extract, and run. The frontend is embedded, so it's a single self-contained file — no other dependencies beyond a reachable cluster via your local kubeconfig:
 
 ```bash
-make run     # hot-reload dev server via air → http://127.0.0.1:8000
-make build   # produces ./bin/kubeatlas
+./kubeatlas               # → http://127.0.0.1:8000
+```
+
+**Develop** — prerequisites: **Go ≥ 1.24**.
+
+```bash
+make dev     # spin up a throwaway KWOK cluster + hot-reload dev server
+make run     # hot-reload dev server against your current kubeconfig context
+make build   # produce a self-contained ./bin/kubeatlas
 make lint    # golangci-lint
 ```
+
+`make dev` needs no host cluster — it provisions an in-process [KWOK](https://kwok.sigs.k8s.io/) cluster (`make dev-down` tears it back down). For a fully reproducible toolchain, open the repo in the bundled **devcontainer** (`.devcontainer/`), which pins Go, air, golangci-lint, kubectl, and KWOK.
 
 Configuration is via environment variables:
 

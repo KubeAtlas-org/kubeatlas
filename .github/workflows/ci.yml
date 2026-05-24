@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  lint-and-test:
-    name: Lint and test
+  lint:
+    name: Lint and vet
     runs-on: ubuntu-latest
     steps:
       - name: Check out
@@ -28,14 +28,67 @@ jobs:
           go mod download
           go mod verify
 
-      - name: Build
-        run: go build ./...
-
       - name: Vet
         run: go vet ./...
 
       - name: Lint
         run: go tool -modfile=.dev/tools.mod golangci-lint run -c .dev/golangci.yaml
 
+  test:
+    name: Build and test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      # The embed + serve tests need no cluster, so this is real runtime
+      # validation on every OS — not just a cross-compile. -race only on Linux:
+      # the detector needs a C toolchain that isn't guaranteed on the macOS /
+      # Windows runners.
       - name: Test
-        run: go test -race -count=1 ./...
+        run: go test -count=1 ${{ runner.os == 'Linux' && '-race' || '' }} ./...
+
+  cross-build:
+    name: Cross compile
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { goos: linux, goarch: amd64 }
+          - { goos: linux, goarch: arm64 }
+          - { goos: darwin, goarch: amd64 }
+          - { goos: darwin, goarch: arm64 }
+          - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      # Compile-only guard: catch a broken cross-platform build the moment it
+      # lands, not at release time. CGO is off so this is a pure-Go cross-compile.
+      - name: Build ${{ matrix.target.goos }}/${{ matrix.target.goarch }}
+        env:
+          GOOS: ${{ matrix.target.goos }}
+          GOARCH: ${{ matrix.target.goarch }}
+          CGO_ENABLED: '0'
+        run: go build ./...
