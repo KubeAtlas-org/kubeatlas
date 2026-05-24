@@ -1,0 +1,97 @@
+name: Dev tooling
+
+# Exercises the developer tooling whose behaviour is OS- or tool-version
+# dependent — the raster brand pipeline (rsvg + ImageMagick v6/v7) across
+# Linux and macOS, and the KWOK test-cluster scripts. Only runs when that
+# tooling changes; never a required check.
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - 'scripts/**'
+      - '.dev/**'
+      - 'makefile'
+      - '.devcontainer/**'
+      - 'public/img/brand/**'
+      - 'public/ext/fonts/**'
+      - '.github/workflows/dev-tools.yml'
+  pull_request:
+    branches: [main]
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  brand-png:
+    name: brand-png (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools (Linux — ImageMagick v6 / `convert`)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            librsvg2-bin imagemagick python3-fonttools python3-brotli
+
+      - name: Install tools (macOS — ImageMagick v7 / `magick`)
+        if: runner.os == 'macOS'
+        run: |
+          brew install librsvg imagemagick
+          python3 -m pip install --break-system-packages fonttools brotli
+
+      - name: Generate rasters
+        run: bash scripts/gen-brand-png.sh
+
+      - name: Outputs have the right dimensions
+        run: |
+          dim() { file "$1" | grep -q "$2" || { echo "✗ $1 expected $2 — got: $(file "$1")"; exit 1; }; echo "✓ $1 $2"; }
+          dim public/img/brand/apple-touch-icon.png "180 x 180"
+          dim public/img/brand/maskable-512.png    "512 x 512"
+          dim public/img/brand/og-card.png         "1200 x 630"
+          file public/img/brand/favicon.ico | grep -q "icon" && echo "✓ favicon.ico"
+
+      - name: Pipeline is reproducible (two runs byte-identical)
+        run: |
+          mkdir -p /tmp/run1
+          cp public/img/brand/apple-touch-icon.png public/img/brand/maskable-512.png public/img/brand/favicon.ico /tmp/run1/
+          bash scripts/gen-brand-png.sh
+          for f in apple-touch-icon.png maskable-512.png favicon.ico; do
+            cmp "/tmp/run1/$f" "public/img/brand/$f" || { echo "✗ $f differs between runs"; exit 1; }
+          done
+          echo "✓ deterministic"
+
+  test-clusters:
+    name: KWOK seed clusters (Linux)
+    runs-on: ubuntu-latest
+    env:
+      KWOK_VERSION: v0.7.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl + KWOK
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/kubectl "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
+          sudo curl -fsSL -o /usr/local/bin/kwok    "https://github.com/kubernetes-sigs/kwok/releases/download/${KWOK_VERSION}/kwok-linux-amd64"
+          sudo curl -fsSL -o /usr/local/bin/kwokctl "https://github.com/kubernetes-sigs/kwok/releases/download/${KWOK_VERSION}/kwokctl-linux-amd64"
+          sudo chmod +x /usr/local/bin/kubectl /usr/local/bin/kwok /usr/local/bin/kwokctl
+
+      - name: Seed + verify the incident cluster, then tear down
+        run: |
+          make seed-large-incident
+          kubectl --context kubeatlas-test-large-incident get pods -A --no-headers | wc -l | grep -qvx 0 \
+            && echo "✓ incident cluster has pods"
+          make teardown-large-incident
+
+      - name: Seed + verify the prod cluster, then tear down
+        run: |
+          make seed-large-prod
+          kubectl --context kubeatlas-test-large-prod get nodes --no-headers | wc -l
+          make teardown-large-prod
