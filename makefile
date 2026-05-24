@@ -10,7 +10,10 @@ BUILD_OS   ?= $(shell go env GOOS)
 BUILD_ARCH ?= $(shell go env GOARCH)
 
 .EXPORT_ALL_VARIABLES:
-.PHONY: help lint lint-fix run stop build clean
+.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot
+
+# Name of the throwaway KWOK cluster used by `make dev`.
+DEV_CLUSTER ?= kubeatlas-dev
 .DEFAULT_GOAL := help
 
 help: ## 💬 This help message :)
@@ -55,6 +58,23 @@ stop: ## 🛑 Stop THIS repo's dev server (air + tmp/main); clusters untouched
 	    match "$$exe" "$$cwd" && kill -9 "$$pid" 2>/dev/null && echo "  💥 force-killed $$pid"; \
 	  done; \
 	fi
+
+dev: ## 🧪 Bring up a KWOK cluster and run the dev server (zero host setup)
+	@figlet $@ || true
+	@# kwokctl's binary runtime runs etcd + apiserver + kwok as local processes —
+	@# no Docker-in-Docker — so this works inside the devcontainer or on the host.
+	@kwokctl get clusters 2>/dev/null | grep -qx "$(DEV_CLUSTER)" \
+	  || kwokctl create cluster --runtime binary --name "$(DEV_CLUSTER)"
+	@kubectl config use-context "kwok-$(DEV_CLUSTER)" >/dev/null
+	@$(MAKE) run
+
+dev-down: ## 🧹 Delete the KWOK dev cluster
+	@figlet $@ || true
+	@kwokctl delete cluster --name "$(DEV_CLUSTER)" 2>/dev/null || true
+
+release-snapshot: ## 📦 Cross-compile a local release snapshot via GoReleaser (no publish)
+	@figlet $@ || true
+	@go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean
 
 build: ## 🔨 Build application binary
 	@figlet $@ || true
