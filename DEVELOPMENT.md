@@ -90,3 +90,5 @@ make release-snapshot   # cross-compile a local GoReleaser snapshot into dist/ (
 ```
 
 Pushing a `vX.Y.Z` tag triggers `.github/workflows/release.yml` → GoReleaser cross-compiles linux/darwin/windows × amd64/arm64 archives + checksums and attaches them to the GitHub Release. Every PR additionally cross-compiles all six targets and runs the test suite on ubuntu/macOS/Windows as a guard (`.github/workflows/ci.yml`).
+
+A separate `.github/workflows/dev-tools.yml` exercises the OS- and tool-version-dependent developer tooling: the brand-png pipeline across Linux (ImageMagick v6) and macOS (v7), checking output dimensions and byte-for-byte reproducibility, plus the KWOK seed/teardown scripts. It runs only when that tooling changes (`scripts/`, `.dev/`, `makefile`, `.devcontainer/`, brand and font assets) and is never a required check.
