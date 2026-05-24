@@ -10,7 +10,7 @@ BUILD_OS   ?= $(shell go env GOOS)
 BUILD_ARCH ?= $(shell go env GOARCH)
 
 .EXPORT_ALL_VARIABLES:
-.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot
+.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot brand-png
 
 # Name of the throwaway KWOK cluster used by `make dev`.
 DEV_CLUSTER ?= kubeatlas-dev
@@ -75,6 +75,10 @@ dev-down: ## 🧹 Delete the KWOK dev cluster
 release-snapshot: ## 📦 Cross-compile a local release snapshot via GoReleaser (no publish)
 	@figlet $@ || true
 	@go run github.com/goreleaser/goreleaser/v2@latest release --snapshot --clean
+
+brand-png: ## 🖼️  Regenerate raster brand assets (PNG/ICO) from the SVG sources
+	@figlet $@ || true
+	@bash scripts/gen-brand-png.sh
 
 build: ## 🔨 Build application binary
 	@figlet $@ || true
