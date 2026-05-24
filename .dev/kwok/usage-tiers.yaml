@@ -1,0 +1,43 @@
+# Tiered, static simulated resource usage for kubeatlas-test-large-prod.
+# Loaded into kwok-controller at cluster-create via `kwokctl ... -c`, alongside
+# metrics-resource.yaml. Passing it as a startup config (not an in-cluster CRD
+# applied later) is what makes kwok wire the node metrics endpoint correctly —
+# the in-cluster-CRD path leaves metrics-server scraping a 404.
+#
+# Static values (not CEL) so metrics columns are stable across a live demo,
+# but differentiated per namespace tier so the cluster looks alive.
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: ClusterResourceUsage
+metadata:
+  name: usage-infra
+spec:
+  selector:
+    matchNamespaces: [kube-system, monitoring, logging, ingress-nginx, cert-manager]
+  usages:
+    - usage:
+        cpu:    { value: "60m" }
+        memory: { value: "256Mi" }
+---
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: ClusterResourceUsage
+metadata:
+  name: usage-frontend
+spec:
+  selector:
+    matchNamespaces: [storefront, checkout]
+  usages:
+    - usage:
+        cpu:    { value: "250m" }
+        memory: { value: "384Mi" }
+---
+apiVersion: kwok.x-k8s.io/v1alpha1
+kind: ClusterResourceUsage
+metadata:
+  name: usage-backend
+spec:
+  selector:
+    matchNamespaces: [payments, catalog, accounts]
+  usages:
+    - usage:
+        cpu:    { value: "400m" }
+        memory: { value: "768Mi" }
