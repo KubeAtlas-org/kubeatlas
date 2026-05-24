@@ -11,7 +11,7 @@ Built for operators who want to *see* the cluster, not parse it.
 ![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?logo=kubernetes&logoColor=white)
 
-**[▶ View the interactive showcase](https://kubeatlas-org.github.io/kubeatlas/)**
+**[▶ View the showcase](https://kubeatlas-org.github.io/kubeatlas/)**
 
 <img src="docs/assets/readme/plate-hero.png" alt="Your cluster, on the map — a live Kubernetes cluster drawn as namespace territories with pods, controllers and services" width="880">
 
