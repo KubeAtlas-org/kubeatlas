@@ -28,8 +28,14 @@ for bin in rsvg-convert python3; do
   command -v "$bin" >/dev/null || { echo "💥 missing required tool: $bin" >&2; exit 1; }
 done
 # ImageMagick is `magick` in v7 (macOS/brew) and `convert` in v6 (Debian/devcontainer).
-MAGICK="$(command -v magick || command -v convert || true)"
-[ -n "$MAGICK" ] || { echo "💥 missing required tool: ImageMagick (magick or convert)" >&2; exit 1; }
+# `identify` is a subcommand of `magick` in v7 but a standalone binary in v6.
+if command -v magick >/dev/null; then
+  MAGICK="$(command -v magick)"; IDENTIFY="$MAGICK identify"
+elif command -v convert >/dev/null; then
+  MAGICK="$(command -v convert)"; IDENTIFY="$(command -v identify)"
+fi
+[ -n "${MAGICK:-}" ] || { echo "💥 missing required tool: ImageMagick (magick or convert)" >&2; exit 1; }
+[ -n "${IDENTIFY:-}" ] || { echo "💥 missing required tool: ImageMagick identify" >&2; exit 1; }
 
 # --- Throwaway fontconfig env exposing Inter (woff2 -> ttf) for SVG text ------
 TMP="$(mktemp -d)"
@@ -90,7 +96,6 @@ for src in "$BRAND/lockup-stacked-dark.svg" "$BRAND/lockup-stacked-light.svg"; d
   for s in 400 800; do
     rsvg-convert -w "$s" -h "$s" "$src" -o "$TMP/lockup-tmp.png"
     "$MAGICK" "$TMP/lockup-tmp.png" -trim +repage "$TMP/trimmed.png"
-    read tw th < <("$MAGICK" identify -format "%w %h" "$TMP/trimmed.png")
     gap=$(python3 -c "
 from PIL import Image
 img = Image.open('$TMP/trimmed.png').convert('RGBA')
@@ -106,7 +111,7 @@ for y in range(h):
 ")
     vpad=$(( gap ))
     "$MAGICK" "$TMP/trimmed.png" -bordercolor none -border "0x${vpad}" +repage "$TMP/vpadded.png"
-    read pw ph < <("$MAGICK" identify -format "%w %h" "$TMP/vpadded.png")
+    read pw ph < <($IDENTIFY -format "%w %h\n" "$TMP/vpadded.png")
     hpad=$(( (ph - pw) / 2 ))
     "$MAGICK" "$TMP/vpadded.png" -bordercolor none -border "${hpad}x0" \
       -background "$bg" -flatten \
