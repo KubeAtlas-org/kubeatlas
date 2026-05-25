@@ -39,13 +39,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            librsvg2-bin imagemagick python3-fonttools python3-brotli
+            librsvg2-bin imagemagick python3-fonttools python3-brotli python3-pil
 
       - name: Install tools (macOS — ImageMagick v7 / `magick`)
         if: runner.os == 'macOS'
         run: |
           brew install librsvg imagemagick
-          python3 -m pip install --break-system-packages fonttools brotli
+          python3 -m pip install --break-system-packages fonttools brotli pillow
 
       - name: Generate rasters
         run: bash scripts/gen-brand-png.sh

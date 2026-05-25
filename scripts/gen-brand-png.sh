@@ -11,7 +11,7 @@
 #   og-card.png           1200x630 social card (real Inter via fontconfig)
 #   favicon.ico           16/32/48 multi-resolution
 #
-# Requires: rsvg-convert (librsvg), ImageMagick (magick or convert), python3 + fontTools.
+# Requires: rsvg-convert (librsvg), ImageMagick (magick or convert), python3 + fontTools + Pillow.
 # SVG <text> renders in an isolated context that ignores the page @font-face,
 # so we expose the bundled Inter woff2 as TTF through a throwaway fontconfig
 # env — otherwise og-card's wordmark would fall back to a system font.

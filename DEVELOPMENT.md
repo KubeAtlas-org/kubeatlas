@@ -6,7 +6,7 @@ Everything you need to hack on KubeAtlas. For what KubeAtlas *is*, see the [READ
 
 - **Go ≥ 1.24** — the only hard requirement to build and run.
 - For the throwaway test clusters: [`kwokctl` + `kwok`](https://kwok.sigs.k8s.io/) and `kubectl`.
-- For regenerating raster brand assets (`make brand-png`): `rsvg-convert` (librsvg), ImageMagick, and `python3` with `fonttools`.
+- For regenerating raster brand assets (`make brand-png`): `rsvg-convert` (librsvg), ImageMagick, and `python3` with `fonttools` and `Pillow`.
 
 Pinned dev tooling (golangci-lint, air) is vendored via `.dev/tools.mod` and invoked through `go tool` — nothing to install globally.
 
@@ -17,7 +17,7 @@ Prefer a turnkey setup? Open the repo in the bundled **devcontainer** (`.devcont
 The compiled binary is fully cross-platform — CI builds and tests it on Linux, macOS, and Windows (amd64 + arm64). The `make`-based dev workflow is **bash + GNU make**, so:
 
 - **Linux** — everything works.
-- **macOS** — `make run` / `dev` / `build` / `lint` and the seed clusters work; install `kwokctl`/`kubectl` (and, for `make brand-png`, `librsvg` + `imagemagick` + `fonttools`) via Homebrew, with Docker running. `make stop` is Linux-only (it reads `/proc`) — use Ctrl-C or `kill` instead.
+- **macOS** — `make run` / `dev` / `build` / `lint` and the seed clusters work; install `kwokctl`/`kubectl` (and, for `make brand-png`, `librsvg` + `imagemagick` + `fonttools` + `pillow`) via Homebrew, with Docker running. `make stop` is Linux-only (it reads `/proc`) — use Ctrl-C or `kill` instead.
 - **Windows** — the bash/make targets don't run in cmd/PowerShell. Use the **devcontainer** (Docker Desktop) or **WSL2** for the same Linux toolchain.
 
 The devcontainer is the lowest-friction path on any host — it bundles the entire toolchain.
