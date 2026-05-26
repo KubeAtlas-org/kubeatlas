@@ -239,7 +239,8 @@ $RECYCLE.BIN/
 # Local build + runtime artefacts
 tmp/
 bin/
-dist/   # GoReleaser snapshot/release output
+# GoReleaser snapshot/release output
+dist/
 
 # Local helper scripts may drop notes here
 release-notes.md

@@ -32,6 +32,10 @@ builds:
 
 archives:
   - id: default
+    # Version-less archive names so the download URL is stable across releases:
+    #   .../releases/latest/download/kubeatlas_<os>_<arch>.tar.gz
+    # (the README install one-liner relies on this).
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats: [tar.gz]
     # Windows users expect a zip.
     format_overrides:
