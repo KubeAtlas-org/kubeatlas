@@ -82,11 +82,18 @@ Edges aren't stored, so KubeAtlas re-derives them on every change by reading ref
 
 ## Quick start
 
-**Run a release binary** by grabbing the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) (linux / macOS / Windows × amd64 / arm64), extract, and run. The frontend is embedded, so it's a single self-contained file with no other dependencies beyond a reachable cluster via your local kubeconfig:
+**Run a release binary** by grabbing the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) (linux / macOS / Windows × amd64 / arm64), extract, and run. The frontend is embedded, so it's a single self-contained file with no other dependencies beyond a reachable cluster via your local kubeconfig.
+
+On Linux or macOS, download and extract the latest release, substituting your OS (`linux`/`darwin`) and arch (`amd64`/`arm64`):
 
 ```bash
+OS=linux ARCH=amd64
+BASE=https://github.com/kubeatlas-org/kubeatlas/releases/latest/download
+curl -fsSL "$BASE/kubeatlas_${OS}_${ARCH}.tar.gz" | tar -xz
 ./kubeatlas               # → http://127.0.0.1:8000
 ```
+
+Windows ships a `.zip` instead, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). If no cluster is reachable at startup, KubeAtlas still launches and the browser shows a reconnect prompt, so you can fix your kubeconfig or switch context and reconnect without restarting.
 
 Working on KubeAtlas itself? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for the dev server, throwaway test clusters, and tooling.
 
