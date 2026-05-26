@@ -45,7 +45,10 @@ checksum:
   name_template: checksums.txt
 
 changelog:
-  use: github
+  # Format entries from the local git log (no per-commit author handle —
+  # this is a solo repo, so `use: github` would just append the same name
+  # to every line).
+  use: git
 
 release:
   github:
