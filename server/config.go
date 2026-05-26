@@ -22,6 +22,7 @@ type Config struct {
 	LogLevel              string // debug | info | warn | error (default: info)
 	LogFormat             string // text | json (default: text)
 	StaticDir             string // serve frontend from this dir instead of the embedded copy (dev)
+	OpenBrowser           bool   // open the default browser on startup (loopback binds only)
 }
 
 // Parse the environment variables and return a Config struct
@@ -91,6 +92,18 @@ func parseConfig(getenv func(string) string) Config {
 
 	staticDir := getenv("STATIC_DIR")
 
+	// Auto-open the browser for the standalone binary, but not in the dev loop:
+	// `make run`/`make dev` set STATIC_DIR, and air restarts the binary on every
+	// edit — auto-opening there would spawn a new tab each rebuild. OPEN_BROWSER
+	// overrides the default in either direction.
+	openBrowser := staticDir == ""
+
+	if s := getenv("OPEN_BROWSER"); s != "" {
+		if b, err := strconv.ParseBool(s); err == nil {
+			openBrowser = b
+		}
+	}
+
 	return Config{
 		Port:                  port,
 		NameSpaceFilter:       nameSpaceFilter,
@@ -102,5 +115,6 @@ func parseConfig(getenv func(string) string) Config {
 		LogLevel:              logLevel,
 		LogFormat:             logFormat,
 		StaticDir:             staticDir,
+		OpenBrowser:           openBrowser,
 	}
 }

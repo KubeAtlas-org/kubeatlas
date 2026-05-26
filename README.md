@@ -108,6 +108,7 @@ Configuration is via environment variables:
 | `DISABLE_POD_LOGS` | `false`          | Disable the log streaming endpoints                         |
 | `LOG_LEVEL`        | `info`           | `debug` / `info` / `warn` / `error`                         |
 | `LOG_FORMAT`       | `text`           | `text` (human-readable) or `json` (one event per line)      |
+| `OPEN_BROWSER`     | _auto_           | Open the UI on startup (loopback only). On for the standalone binary, off in the dev loop; set `true`/`false` to override |
 | `STATIC_DIR`       | _empty_          | Serve the frontend from this dir on disk (dev)              |
 | `KUBECONFIG`       | `~/.kube/config` | Standard client-go kubeconfig path                          |
 

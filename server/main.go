@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -62,7 +63,26 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	if err := httpServer.ListenAndServe(); err != nil {
+	// Bind before opening the browser so it connects to a live socket rather than
+	// racing the listener.
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		slog.Error("💥 server failed to start", "err", err)
+		os.Exit(1)
+	}
+
+	// Auto-open the UI for the standalone binary. Loopback only: a non-loopback
+	// bind is typically headless/remote, where there's no local browser to open
+	// and the URL wouldn't point at this host anyway.
+	isLoopback := config.BindAddress == "127.0.0.1" || config.BindAddress == "localhost"
+	if config.OpenBrowser && isLoopback {
+		url := fmt.Sprintf("http://127.0.0.1:%d", config.Port)
+		slog.Info("🌐 opening browser", "url", url)
+
+		go openBrowser(url)
+	}
+
+	if err := httpServer.Serve(ln); err != nil {
 		slog.Error("💥 server failed to start", "err", err)
 		os.Exit(1)
 	}
