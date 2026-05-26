@@ -163,7 +163,7 @@ fabric.properties
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
 
 # Thumbnails
 ._*
@@ -239,6 +239,7 @@ $RECYCLE.BIN/
 # Local build + runtime artefacts
 tmp/
 bin/
+dist/   # GoReleaser snapshot/release output
 
 # Local helper scripts may drop notes here
 release-notes.md
