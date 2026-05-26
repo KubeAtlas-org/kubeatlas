@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"io/fs"
 	"net/http"
@@ -50,24 +51,28 @@ func (s *KubeatlasAPI) AddRoutes(r *chi.Mux) {
 	// Special route for SSE streaming events to connected clients
 	r.HandleFunc("/updates", s.handleSSE)
 
-	// REST API routes
+	// REST API routes. handleNamespaceList, context switch, and reconnect work in
+	// the disconnected state (they report it / recover from it); everything that
+	// dereferences the live cluster is wrapped in requireCluster so a disconnected
+	// boot returns 503 instead of panicking on a nil kubeService.
 	r.Get("/api/namespaces", s.handleNamespaceList)
-	r.Get("/api/fetch/{namespace}", s.handleFetchData)
-	r.Get("/api/fetch-cluster", s.handleFetchClusterData)
-	r.Get("/api/logs/{namespace}/{podname}", s.handlePodLogs)
-	r.Get("/api/resource/{namespace}/{kind}/{name}/yaml", s.handleResourceYAML)
-	r.Put("/api/resource/{namespace}/{kind}/{name}/yaml", s.handleApplyResourceYAML)
-	r.Delete("/api/resources/{namespace}/{kind}/{name}", s.handleDeleteResource)
-	r.Get("/api/metrics/{namespace}/pods", s.handlePodMetrics)
-	r.Get("/api/metrics/nodes", s.handleNodeMetrics)
-	r.Put("/api/resources/{namespace}/{kind}/{name}/scale", s.handleScaleResource)
-	r.Post("/api/resources/{namespace}/{kind}/{name}/restart", s.handleRestartResource)
-	r.Get("/api/crds", s.handleCRDList)
-	r.Get("/api/crds/{group}/{version}/{resource}/{namespace}", s.handleCRDResources)
+	r.Get("/api/fetch/{namespace}", s.requireCluster(s.handleFetchData))
+	r.Get("/api/fetch-cluster", s.requireCluster(s.handleFetchClusterData))
+	r.Get("/api/logs/{namespace}/{podname}", s.requireCluster(s.handlePodLogs))
+	r.Get("/api/resource/{namespace}/{kind}/{name}/yaml", s.requireCluster(s.handleResourceYAML))
+	r.Put("/api/resource/{namespace}/{kind}/{name}/yaml", s.requireCluster(s.handleApplyResourceYAML))
+	r.Delete("/api/resources/{namespace}/{kind}/{name}", s.requireCluster(s.handleDeleteResource))
+	r.Get("/api/metrics/{namespace}/pods", s.requireCluster(s.handlePodMetrics))
+	r.Get("/api/metrics/nodes", s.requireCluster(s.handleNodeMetrics))
+	r.Put("/api/resources/{namespace}/{kind}/{name}/scale", s.requireCluster(s.handleScaleResource))
+	r.Post("/api/resources/{namespace}/{kind}/{name}/restart", s.requireCluster(s.handleRestartResource))
+	r.Get("/api/crds", s.requireCluster(s.handleCRDList))
+	r.Get("/api/crds/{group}/{version}/{resource}/{namespace}", s.requireCluster(s.handleCRDResources))
 	r.Post("/api/contexts/switch", s.handleContextSwitch)
+	r.Post("/api/contexts/reconnect", s.handleReconnect)
 
 	// WebSocket exec/shell
-	r.Get("/ws/exec/{namespace}/{pod}", s.handleExec)
+	r.Get("/ws/exec/{namespace}/{pod}", s.requireCluster(s.handleExec))
 }
 
 // requireClientID extracts the clientID query param, returning false and writing a 400 if absent.
@@ -86,6 +91,29 @@ func requireClientID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	*r = *r.WithContext(logging.WithLogger(ctx, logger))
 
 	return id, true
+}
+
+// requireCluster guards routes that dereference the live cluster. When the
+// server booted in disconnected mode (no reachable cluster), kubeService is nil;
+// short-circuit with 503 rather than panicking. Once a reconnect succeeds the
+// wrapped handlers serve normally again.
+func (s *KubeatlasAPI) requireCluster(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if s.kubeService == nil {
+			writeJSONError(w, http.StatusServiceUnavailable, "not connected to a Kubernetes cluster")
+			return
+		}
+
+		h(w, r)
+	}
+}
+
+// writeJSONError sends a minimal JSON error body. New code uses this in place of
+// the benc-uk problem package, which the server is migrating away from.
+func writeJSONError(w http.ResponseWriter, status int, detail string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]any{"status": status, "detail": detail})
 }
 
 // noCache wraps a handler and disables caching on every response.

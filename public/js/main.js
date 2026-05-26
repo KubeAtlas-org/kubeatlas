@@ -81,6 +81,8 @@ Alpine.data('mainApp', () => ({
   // ===== Application state ================================
   errorMessage: '',
   errorDetails: '',
+  clusterDisconnected: false, // server is up but has no cluster connection
+  reconnecting: false,        // a reconnect attempt is in flight
   /** @type {string[] | null} */
   namespaces: null,
   namespace: '',
@@ -723,6 +725,21 @@ Alpine.data('mainApp', () => ({
       res = await timedFetch('api/namespaces')
       if (!res.ok) throw new Error(`HTTP error ${res.status}: ${res.statusText}`)
       const data = await res.json()
+      // Server is up but couldn't reach a cluster: show a reconnect prompt
+      // (with the available contexts) instead of the graph.
+      if (data.connected === false) {
+        this.contexts = data.contexts || []
+        this.currentContext = data.currentContext || ''
+        this.serviceMetadata.version = data.version || ''
+        this.serviceMetadata.buildInfo = data.buildInfo || ''
+        this.clusterDisconnected = true
+        this.errorMessage = 'Not connected to a Kubernetes cluster.'
+        this.errorDetails = data.connectionError || ''
+        this.showWelcome = false
+        this.isLoading = false
+        return
+      }
+      this.clusterDisconnected = false
       slog.debug('namespaces loaded', { count: data.namespaces?.length })
       this.namespaces = data.namespaces || []
       this.serviceMetadata.clusterHost = data.clusterHost || ''
@@ -778,6 +795,36 @@ Alpine.data('mainApp', () => ({
     await this.refreshNamespaces()
     // fetchNamespace handles isLoading when a namespace is auto-selected; reset it otherwise
     if (!this.namespace) this.isLoading = false
+  },
+
+  // Ask the server to (re)connect to the cluster after a disconnected boot.
+  // The server re-reads kubeconfig live, so fixing it then retrying recovers
+  // without a process restart.
+  async reconnect() {
+    if (this.reconnecting) return
+    this.reconnecting = true
+    slog.info('🔄 attempting to reconnect to cluster')
+    try {
+      const res = await timedFetch('api/contexts/reconnect', { method: 'POST' })
+      if (!res.ok) {
+        // Still down — surface the latest reason via refreshNamespaces().
+        await this.refreshNamespaces()
+        showToast('Still cannot reach a cluster', 4000, 'top-center', 'error')
+        return
+      }
+      this.errorMessage = ''
+      this.errorDetails = ''
+      this.clusterDisconnected = false
+      this.showWelcome = true
+      showToast('Connected to the cluster!', 3000, 'top-center', 'success')
+      await this.refreshNamespaces()
+      if (this.namespace) await this.fetchNamespace()
+    } catch (err) {
+      slog.warn('💥 reconnect failed', { err })
+      await this.refreshNamespaces()
+    } finally {
+      this.reconnecting = false
+    }
   },
 
   showError(message, res) {

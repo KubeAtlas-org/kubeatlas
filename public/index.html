@@ -56,17 +56,30 @@
     <script src="public/ext/xterm/xterm-addon-fit.min.js"></script>
 
     <!-- KubeAtlas app -->
-    <link rel="stylesheet" href="public/css/main.css?v=78" />
-    <script src="public/js/main.js?v=78" type="module"></script>
-    <script src="public/js/loader.js?v=78" type="module"></script>
+    <link rel="stylesheet" href="public/css/main.css?v=79" />
+    <script src="public/js/main.js?v=79" type="module"></script>
+    <script src="public/js/loader.js?v=79" type="module"></script>
   </head>
 
   <body x-data="mainApp">
     <div class="banner is-danger" x-show="errorMessage" x-cloak>
-      <p class="banner-title">💀 A terrible thing happened!</p>
+      <p class="banner-title" x-text="clusterDisconnected ? '🔌 Not connected to a cluster' : '💀 A terrible thing happened!'"></p>
       <p x-text="errorMessage"></p>
       <pre x-show="errorDetails" x-text="errorDetails"></pre>
-      <button class="btn" style="margin-top: 12px" @click="window.location.reload()">Reload</button>
+      <!-- Disconnected boot: offer a live retry (and a context switch when other
+           contexts exist) so the operator can recover without restarting. -->
+      <template x-if="clusterDisconnected">
+        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="btn" @click="reconnect()" :disabled="reconnecting"
+                  x-text="reconnecting ? 'Connecting…' : 'Retry connection'"></button>
+          <template x-if="contexts && contexts.length > 1">
+            <button class="btn" @click="_openPaletteWith('ctx ')">Switch context</button>
+          </template>
+        </div>
+      </template>
+      <template x-if="!clusterDisconnected">
+        <button class="btn" style="margin-top: 12px" @click="window.location.reload()">Reload</button>
+      </template>
     </div>
 
     <!-- Welcome screen -->

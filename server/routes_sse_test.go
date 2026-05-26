@@ -417,3 +417,72 @@ func TestHandleFetchData_NoClientID(t *testing.T) {
 		t.Errorf("Expected 400, got %v", rec.Code)
 	}
 }
+
+// When the server booted without a cluster connection (kubeService is nil),
+// the namespace list returns 200 with connected=false plus the reason and the
+// contexts the operator may switch to — so the frontend renders a reconnect
+// prompt instead of breaking.
+func TestHandleNamespaceList_Disconnected(t *testing.T) {
+	apiSvc := &KubeatlasAPI{
+		Base:        api.NewBase("test", "1.0", "build", true),
+		kubeService: nil,
+		connErr:     errors.New("no configuration has been provided"),
+		contexts:    []string{"ctx-a", "ctx-b"},
+		config:      Config{},
+		Version:     "1.0",
+		BuildInfo:   "build",
+	}
+
+	req := httptest.NewRequest("GET", "/api/namespaces", nil)
+	rec := httptest.NewRecorder()
+
+	apiSvc.handleNamespaceList(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %v, want 200", rec.Code)
+	}
+
+	var res NamespaceListResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	if res.Connected {
+		t.Error("Connected = true, want false")
+	}
+
+	if res.ConnectionError == "" {
+		t.Error("ConnectionError is empty, want the connection failure reason")
+	}
+
+	if len(res.Contexts) != 2 {
+		t.Errorf("Contexts = %v, want the 2 discovered contexts so the UI can offer a switch", res.Contexts)
+	}
+}
+
+// requireCluster short-circuits with 503 when there is no cluster connection,
+// and delegates to the wrapped handler once one exists.
+func TestRequireCluster(t *testing.T) {
+	called := false
+	wrapped := func(w http.ResponseWriter, r *http.Request) { called = true }
+
+	disconnected := &KubeatlasAPI{Base: api.NewBase("test", "1.0", "build", true), kubeService: nil}
+	rec := httptest.NewRecorder()
+	disconnected.requireCluster(wrapped)(rec, httptest.NewRequest("GET", "/api/crds", nil))
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("disconnected status = %v, want 503", rec.Code)
+	}
+
+	if called {
+		t.Error("wrapped handler ran despite no cluster connection")
+	}
+
+	connected := &KubeatlasAPI{Base: api.NewBase("test", "1.0", "build", true), kubeService: &MockKubeService{}}
+	rec = httptest.NewRecorder()
+	connected.requireCluster(wrapped)(rec, httptest.NewRequest("GET", "/api/crds", nil))
+
+	if !called {
+		t.Error("wrapped handler did not run with a live cluster connection")
+	}
+}

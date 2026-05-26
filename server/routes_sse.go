@@ -32,6 +32,28 @@ func (s *KubeatlasAPI) handleNamespaceList(w http.ResponseWriter, r *http.Reques
 	log := logging.FromContext(r.Context())
 	log.Info("🔍 fetching list of namespaces")
 
+	// Disconnected boot: no cluster connection. Return a 200 the frontend can act
+	// on (the error to show, plus the contexts it may switch to), rather than an
+	// error status, so the page renders a reconnect prompt instead of breaking.
+	if s.kubeService == nil {
+		msg := "not connected to a Kubernetes cluster"
+		if s.connErr != nil {
+			msg = s.connErr.Error()
+		}
+
+		s.ReturnJSON(w, NamespaceListResult{
+			Connected:       false,
+			ConnectionError: msg,
+			Version:         s.Version,
+			BuildInfo:       s.BuildInfo,
+			PodLogsEnabled:  s.config.EnablePodLogs,
+			CurrentContext:  s.currentContext,
+			Contexts:        s.contexts,
+		})
+
+		return
+	}
+
 	var (
 		namespaces []string
 		err        error
@@ -71,6 +93,7 @@ func (s *KubeatlasAPI) handleNamespaceList(w http.ResponseWriter, r *http.Reques
 	}
 
 	res := NamespaceListResult{
+		Connected:        true,
 		ClusterHost:      s.kubeService.GetClusterHost(),
 		Namespaces:       namespaces,
 		Version:          s.Version,

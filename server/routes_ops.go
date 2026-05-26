@@ -127,3 +127,46 @@ func (s *KubeatlasAPI) handleContextSwitch(w http.ResponseWriter, r *http.Reques
 	log.Info("✅ switched Kubernetes context", "context", body.Context)
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// Attempt to (re)connect to the cluster, typically after a disconnected boot or
+// an unreachable context. It re-reads kubeconfig live — fixing KUBECONFIG and
+// hitting retry recovers without restarting the process. On success the new
+// service is swapped in (any previous one is closed) and connErr is cleared.
+func (s *KubeatlasAPI) handleReconnect(w http.ResponseWriter, r *http.Request) {
+	s.switchMu.Lock()
+	defer s.switchMu.Unlock()
+
+	log := logging.FromContext(r.Context())
+	log.Info("🔄 attempting to connect to Kubernetes")
+
+	// Re-discover contexts in case the user just fixed or added their kubeconfig.
+	if contexts, current, err := services.GetKubeContexts(); err == nil {
+		s.contexts = contexts
+		if s.currentContext == "" {
+			s.currentContext = current
+		}
+	}
+
+	newSvc, err := services.NewKubernetes(s.eventBroker.Broker, s.config.SingleNamespace, s.currentContext)
+	if err != nil {
+		s.connErr = err
+		log.Warn("⚠️  reconnect failed", "err", err)
+		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
+
+		return
+	}
+
+	if old := s.kubeService; old != nil {
+		old.Close()
+	}
+
+	s.kubeService = newSvc
+	s.connErr = nil
+
+	if newSvc.ContextName != "" {
+		s.currentContext = newSvc.ContextName
+	}
+
+	log.Info("✅ connected to Kubernetes", "context", s.currentContext)
+	w.WriteHeader(http.StatusNoContent)
+}
