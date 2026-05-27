@@ -82,23 +82,22 @@ Edges aren't stored, so KubeAtlas re-derives them on every change by reading ref
 
 ## Quick start
 
-**Install** on Linux or macOS — picks the right binary for your OS/arch, verifies its checksum, and drops it on your `PATH`:
+**Install** — each one-liner detects your OS/arch, downloads and checksum-verifies the matching binary, and installs it so you can run `kubeatlas` from anywhere.
+
+Linux / macOS:
 
 ```bash
 curl -fsSL https://kubeatlas-org.github.io/kubeatlas/install.sh | bash
 kubeatlas                 # opens http://127.0.0.1:8000 in your browser
 ```
 
-Rather not pipe a script to your shell (or on Windows)? Grab the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) and extract it. The binary is a single **statically linked** file — the frontend is embedded and there are no shared-library dependencies, so it runs on any Linux distro (Alpine included), with nothing required beyond a reachable cluster via your kubeconfig:
+Windows (PowerShell):
 
-```bash
-OS=linux ARCH=amd64       # or darwin; amd64 / arm64
-BASE=https://github.com/kubeatlas-org/kubeatlas/releases/latest/download
-curl -fsSL "$BASE/kubeatlas_${OS}_${ARCH}.tar.gz" | tar -xz
-./kubeatlas
+```powershell
+irm https://kubeatlas-org.github.io/kubeatlas/install.ps1 | iex
 ```
 
-Windows ships a `.zip`, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). KubeAtlas opens your browser on startup, and launches even when no cluster is reachable so you can fix your kubeconfig and reconnect from the UI.
+The binary is a single **statically linked** file — the frontend is embedded and there are no shared-library dependencies, so it runs on any Linux distro (Alpine included); all it needs is a reachable cluster via your kubeconfig. Prefer not to pipe a script to your shell? Prebuilt archives for every OS/arch are on the [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) page. KubeAtlas opens your browser on startup, and launches even when no cluster is reachable so you can fix your kubeconfig and reconnect from the UI.
 
 Working on KubeAtlas itself? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for the dev server, throwaway test clusters, and tooling.
 

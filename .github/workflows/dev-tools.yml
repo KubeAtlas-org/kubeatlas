@@ -1,9 +1,10 @@
 name: Dev tooling
 
-# Exercises the developer tooling whose behaviour is OS- or tool-version
-# dependent — the raster brand pipeline (rsvg + ImageMagick v6/v7) across
-# Linux and macOS, and the KWOK test-cluster scripts. Only runs when that
-# tooling changes; never a required check.
+# Exercises the developer/distribution tooling whose behaviour is OS- or
+# tool-version dependent — the raster brand pipeline (rsvg + ImageMagick v6/v7)
+# across Linux and macOS, the KWOK test-cluster scripts, and the install
+# scripts (sh on Linux, PowerShell on Windows). Only runs when that tooling
+# changes; never a required check.
 on:
   push:
     branches: [main]
@@ -14,6 +15,8 @@ on:
       - '.devcontainer/**'
       - 'public/img/brand/**'
       - 'public/ext/fonts/**'
+      - 'docs/install.sh'
+      - 'docs/install.ps1'
       - '.github/workflows/dev-tools.yml'
   pull_request:
     branches: [main]
@@ -24,6 +27,34 @@ permissions:
   contents: read
 
 jobs:
+  installer:
+    name: installer (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both scripts pull the latest published release, so they exercise the real
+      # download + checksum + extract + install path on each OS.
+      - name: Run install.sh (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          KUBEATLAS_INSTALL_DIR="$RUNNER_TEMP/ka" sh docs/install.sh
+          test -x "$RUNNER_TEMP/ka/kubeatlas" || { echo "✗ binary not installed"; exit 1; }
+          echo "✓ install.sh installed the binary"
+
+      - name: Run install.ps1 (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:KUBEATLAS_INSTALL_DIR = "$env:RUNNER_TEMP\ka"
+          ./docs/install.ps1
+          if (-not (Test-Path "$env:RUNNER_TEMP\ka\kubeatlas.exe")) { throw "✗ binary not installed" }
+          Write-Host "✓ install.ps1 installed the binary"
+
   brand-png:
     name: brand-png (${{ matrix.os }})
     strategy:
