@@ -34,7 +34,9 @@ run: ## 🏃 Run application, used for local development
 	@# STATIC_DIR makes the dev server read the frontend from public/ on disk,
 	@# so editing public/ and reloading the browser needs no rebuild. A built
 	@# binary leaves it unset and serves the embedded copy instead.
-	@STATIC_DIR=$${STATIC_DIR:-public} go tool -modfile=.dev/tools.mod air -c .dev/air.toml
+	@# KUBEATLAS_DEV=1 turns off the end-user conveniences that fight air's
+	@# restart-on-edit loop: browser auto-open and the single-instance guard.
+	@KUBEATLAS_DEV=1 STATIC_DIR=$${STATIC_DIR:-public} go tool -modfile=.dev/tools.mod air -c .dev/air.toml
 
 stop: ## 🛑 Stop THIS repo's dev server (air + tmp/main); clusters untouched
 	@figlet $@ || true

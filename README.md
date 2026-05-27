@@ -90,10 +90,10 @@ On Linux or macOS, download and extract the latest release, substituting your OS
 OS=linux ARCH=amd64
 BASE=https://github.com/kubeatlas-org/kubeatlas/releases/latest/download
 curl -fsSL "$BASE/kubeatlas_${OS}_${ARCH}.tar.gz" | tar -xz
-./kubeatlas               # → http://127.0.0.1:8000
+./kubeatlas               # opens http://127.0.0.1:8000 in your browser
 ```
 
-Windows ships a `.zip` instead, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). If no cluster is reachable at startup, KubeAtlas still launches and the browser shows a reconnect prompt, so you can fix your kubeconfig or switch context and reconnect without restarting.
+Windows ships a `.zip` instead, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). It opens your browser on startup, and launches even when no cluster is reachable so you can fix your kubeconfig and reconnect from the UI.
 
 Working on KubeAtlas itself? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for the dev server, throwaway test clusters, and tooling.
 
@@ -101,7 +101,7 @@ Configuration is via environment variables:
 
 | Variable           | Default          | Description                                                 |
 |--------------------|------------------|-------------------------------------------------------------|
-| `PORT`             | `8000`           | Server listen port                                          |
+| `PORT`             | `8000`           | Server listen port. If unset and `8000` is busy, falls back to a free port; if set explicitly and busy, it's an error |
 | `BIND_ADDRESS`     | `127.0.0.1`      | Bind interface (warns loudly if set to a non-loopback addr) |
 | `SINGLE_NAMESPACE` | _empty_          | Restrict the server to a single namespace                   |
 | `NAMESPACE_FILTER` | _empty_          | Regex of namespaces to hide                                 |

@@ -28,6 +28,8 @@ func main() {
 	logging.Init(config.LogLevel, config.LogFormat)
 
 	addr := fmt.Sprintf("%s:%d", config.BindAddress, config.Port)
+	isLoopback := config.BindAddress == "127.0.0.1" || config.BindAddress == "localhost"
+
 	slog.Info("🚀 starting KubeAtlas",
 		"version", version,
 		"address", addr,
@@ -35,9 +37,15 @@ func main() {
 		"log_format", config.LogFormat)
 	slog.Debug("🔧 configuration", "config", fmt.Sprintf("%+v", config))
 
-	if config.BindAddress != "127.0.0.1" && config.BindAddress != "localhost" {
+	if !isLoopback {
 		slog.Warn("⚠️  not binding to localhost — server is reachable on external network interfaces")
 		slog.Warn("⚠️  this configuration is unsupported and may result in critical security vulnerabilities")
+	}
+
+	// Single-instance: if one is already running for this user, focus it and exit
+	// rather than starting a second server + informer set.
+	if focusRunningInstance(config, isLoopback) {
+		return
 	}
 
 	r := chi.NewRouter()
@@ -55,7 +63,6 @@ func main() {
 
 	//nolint:gosec
 	httpServer := &http.Server{
-		Addr:    addr,
 		Handler: r,
 		// ReadHeaderTimeout prevents Slowloris-style DoS attacks where a client
 		// holds a connection open by sending headers slowly. This does not affect
@@ -64,19 +71,37 @@ func main() {
 	}
 
 	// Bind before opening the browser so it connects to a live socket rather than
-	// racing the listener.
-	ln, err := net.Listen("tcp", addr)
+	// racing the listener. A busy default port falls back to a free one (see listen).
+	ln, err := listen(addr, config.PortExplicit)
 	if err != nil {
-		slog.Error("💥 server failed to start", "err", err)
+		logListenError(err, config.Port, config.PortExplicit)
 		os.Exit(1)
+	}
+
+	port := ln.Addr().(*net.TCPAddr).Port
+	if port != config.Port {
+		slog.Warn("⚠️  requested port was in use — bound a free port instead",
+			"requested", config.Port, "listening", port)
+	}
+
+	slog.Info("👂 listening", "address", fmt.Sprintf("%s:%d", config.BindAddress, port))
+
+	url := fmt.Sprintf("http://127.0.0.1:%d", port)
+
+	// Record ourselves as the running instance so a later launch finds and
+	// focuses us; clean up on normal return (the signal path is handled inside
+	// recordInstance). PORT-explicit runs are deliberate separate instances and
+	// don't participate in this bookkeeping.
+	if config.SingleInstance && !config.PortExplicit {
+		recordInstance(port, url)
+
+		defer removeInstanceState()
 	}
 
 	// Auto-open the UI for the standalone binary. Loopback only: a non-loopback
 	// bind is typically headless/remote, where there's no local browser to open
 	// and the URL wouldn't point at this host anyway.
-	isLoopback := config.BindAddress == "127.0.0.1" || config.BindAddress == "localhost"
 	if config.OpenBrowser && isLoopback {
-		url := fmt.Sprintf("http://127.0.0.1:%d", config.Port)
 		slog.Info("🌐 opening browser", "url", url)
 
 		go openBrowser(url)
