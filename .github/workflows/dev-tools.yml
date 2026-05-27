@@ -35,7 +35,7 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Both scripts pull the latest published release, so they exercise the real
       # download + checksum + extract + install path on each OS.
@@ -63,7 +63,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install tools (Linux — ImageMagick v6 / `convert`)
         if: runner.os == 'Linux'
@@ -105,7 +105,7 @@ jobs:
     env:
       KWOK_VERSION: v0.7.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install kubectl + KWOK
         run: |
