@@ -96,3 +96,12 @@ case ":${PATH}:" in
 		echo "or run it directly:  ${DIR}/kubeatlas"
 		;;
 esac
+
+# --- one-time notices --------------------------------------------------------
+echo
+echo "KubeAtlas reads your kubeconfig and acts with that user's cluster"
+echo "permissions — run it as the user whose access you intend, not as root."
+echo
+echo "It's early and under active development: expect rough edges, don't use it"
+echo "for mission-critical work, and please send feedback / report bugs at"
+echo "  https://github.com/${REPO}/issues"

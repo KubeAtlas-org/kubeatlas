@@ -19,7 +19,7 @@ Built for operators who want to *see* the cluster, not parse it.
 
 </div>
 
-> This repository is the **demo-day public release**, which is a snapshot of the project for showcase and review. It's a local development companion, not a production deployment target.
+> ⚠️ **Early and under active development.** Expect rough edges and bugs — **for now, we strictly don't recommend relying on it for mission-critical work.** Please [open an issue](https://github.com/kubeatlas-org/kubeatlas/issues) with problems or feedback, it's exactly what the project needs right now.
 
 ---
 
