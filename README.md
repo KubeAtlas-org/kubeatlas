@@ -82,18 +82,23 @@ Edges aren't stored, so KubeAtlas re-derives them on every change by reading ref
 
 ## Quick start
 
-**Run a release binary** by grabbing the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) (linux / macOS / Windows × amd64 / arm64), extract, and run. The frontend is embedded, so it's a single self-contained file with no other dependencies beyond a reachable cluster via your local kubeconfig.
-
-On Linux or macOS, download and extract the latest release, substituting your OS (`linux`/`darwin`) and arch (`amd64`/`arm64`):
+**Install** on Linux or macOS — picks the right binary for your OS/arch, verifies its checksum, and drops it on your `PATH`:
 
 ```bash
-OS=linux ARCH=amd64
-BASE=https://github.com/kubeatlas-org/kubeatlas/releases/latest/download
-curl -fsSL "$BASE/kubeatlas_${OS}_${ARCH}.tar.gz" | tar -xz
-./kubeatlas               # opens http://127.0.0.1:8000 in your browser
+curl -fsSL https://kubeatlas-org.github.io/kubeatlas/install.sh | bash
+kubeatlas                 # opens http://127.0.0.1:8000 in your browser
 ```
 
-Windows ships a `.zip` instead, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). It opens your browser on startup, and launches even when no cluster is reachable so you can fix your kubeconfig and reconnect from the UI.
+Rather not pipe a script to your shell (or on Windows)? Grab the archive for your OS/arch from [Releases](https://github.com/kubeatlas-org/kubeatlas/releases) and extract it. The binary is a single **statically linked** file — the frontend is embedded and there are no shared-library dependencies, so it runs on any Linux distro (Alpine included), with nothing required beyond a reachable cluster via your kubeconfig:
+
+```bash
+OS=linux ARCH=amd64       # or darwin; amd64 / arm64
+BASE=https://github.com/kubeatlas-org/kubeatlas/releases/latest/download
+curl -fsSL "$BASE/kubeatlas_${OS}_${ARCH}.tar.gz" | tar -xz
+./kubeatlas
+```
+
+Windows ships a `.zip`, and every release includes `checksums.txt` to verify the download (`sha256sum -c`). KubeAtlas opens your browser on startup, and launches even when no cluster is reachable so you can fix your kubeconfig and reconnect from the UI.
 
 Working on KubeAtlas itself? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for the dev server, throwaway test clusters, and tooling.
 
