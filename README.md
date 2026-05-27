@@ -149,12 +149,6 @@ Every state was verified end-to-end through the live interface. Rendering uses *
 
 ---
 
-## Conclusion
-
-> A focused, real-time visual layer over Kubernetes, built to *complement* your workflow, not replace it. A deliberately bounded scope keeps it fast and safe.
-
----
-
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
