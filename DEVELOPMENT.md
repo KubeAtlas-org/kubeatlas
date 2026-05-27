@@ -43,9 +43,13 @@ go test ./...   # all Go tests
 go test ./server -run TestName   # a single test
 make lint       # golangci-lint (must pass for PRs)
 make lint-fix   # lint with --fix
+
+go test -tags smoke -run TestSmoke ./server   # runtime smoke: builds and runs the binary
 ```
 
 A built binary leaves `STATIC_DIR` unset and serves the embedded copy of `public/`, so it runs anywhere a kubeconfig is reachable — no sidecar files.
+
+The `smoke`-tagged test runs the actual binary end-to-end (headless, no cluster) to exercise the platform-dependent startup paths: port binding and free-port fallback, the single-instance guard, and disconnected boot. CI runs it on Linux, macOS, and Windows, because "it compiles" isn't enough for that OS-level behaviour.
 
 ## Test clusters
 

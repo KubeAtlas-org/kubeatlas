@@ -61,6 +61,13 @@ jobs:
       - name: Test
         run: go test -count=1 ${{ runner.os == 'Linux' && '-race' || '' }} ./...
 
+      # Runtime smoke of the built binary on each OS — the deployment-sensitive
+      # behaviour (port binding + free-port fallback, single-instance guard,
+      # disconnected boot) is platform-dependent, so "compiles" isn't enough.
+      # Headless (OPEN_BROWSER=false); needs no cluster.
+      - name: Smoke test the binary
+        run: go test -tags smoke -run TestSmoke -count=1 ./server
+
   cross-build:
     name: Cross compile
     runs-on: ubuntu-latest
