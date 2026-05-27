@@ -6,8 +6,8 @@
 # fixed-size icon needs.
 #
 # Outputs (public/img/brand/):
-#   apple-touch-icon.png  180x180, ~12% margin, opaque brand background
-#   maskable-512.png      512x512, ~20% safe-zone, opaque brand background
+#   apple-touch-icon.png  180x180, ~8% margin, opaque brand background
+#   maskable-512.png      512x512, ~15% safe-zone, opaque brand background
 #   og-card.png           1200x630 social card (real Inter via fontconfig)
 #   favicon.ico           16/32/48 multi-resolution
 #
@@ -76,8 +76,8 @@ print(ch, cw, round((s-cw)/2), round((s-ch)/2))")
 }
 
 echo "🎨 regenerating brand rasters…"
-icon 180 0.76 "$BRAND/apple-touch-icon.png"   # ~12% margin each side
-icon 512 0.60 "$BRAND/maskable-512.png"        # ~20% safe-zone each side
+icon 180 0.84 "$BRAND/apple-touch-icon.png"   # ~8% margin each side
+icon 512 0.70 "$BRAND/maskable-512.png"        # ~15% safe-zone each side (within the 80%-dia maskable safe circle)
 
 # --- Social card (Inter 800 + 600 text) --------------------------------------
 rsvg-convert -w 1200 -h 630 "$BRAND/og-card.svg" -o "$BRAND/og-card.png"
