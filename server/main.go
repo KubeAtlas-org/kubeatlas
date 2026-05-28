@@ -86,7 +86,7 @@ func main() {
 
 	slog.Info("👂 listening", "address", fmt.Sprintf("%s:%d", config.BindAddress, port))
 
-	url := fmt.Sprintf("http://127.0.0.1:%d", port)
+	url := fmt.Sprintf("http://%s:%d", config.BindAddress, port)
 
 	// Record ourselves as the running instance so a later launch finds and
 	// focuses us; clean up on normal return (the signal path is handled inside
