@@ -5,6 +5,7 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 	"regexp"
 	"strconv"
@@ -64,7 +65,11 @@ func parseConfig(getenv func(string) string) Config {
 
 	var nameSpaceFilterRegexp *regexp.Regexp
 	if nameSpaceFilter != "" {
-		nameSpaceFilterRegexp, _ = regexp.Compile(nameSpaceFilter)
+		var err error
+		nameSpaceFilterRegexp, err = regexp.Compile(nameSpaceFilter)
+		if err != nil {
+			slog.Warn("⚠️  NAMESPACE_FILTER is not a valid regex — filter will be ignored", "pattern", nameSpaceFilter, "err", err)
+		}
 	}
 
 	enablePodLogs := !envBool(getenv, "DISABLE_POD_LOGS", false)

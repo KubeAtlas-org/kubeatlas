@@ -49,7 +49,10 @@ func NewKubeatlasAPI(conf Config) *KubeatlasAPI {
 	broker := services.NewKubeEventBroker(conf.Debug)
 
 	// Discover available kubeconfig contexts before connecting
-	contexts, currentCtx, _ := services.GetKubeContexts()
+	contexts, currentCtx, err := services.GetKubeContexts()
+	if err != nil {
+		slog.Warn("⚠️  could not load kubeconfig contexts", "err", err)
+	}
 
 	// Create a new Kubernetes service instance, which will connect to the cluster.
 	kubeSvc, err := services.NewKubernetes(broker.Broker, conf.SingleNamespace, "")
