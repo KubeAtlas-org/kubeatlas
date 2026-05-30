@@ -114,15 +114,20 @@ jobs:
           sudo curl -fsSL -o /usr/local/bin/kwokctl "https://github.com/kubernetes-sigs/kwok/releases/download/${KWOK_VERSION}/kwokctl-linux-amd64"
           sudo chmod +x /usr/local/bin/kubectl /usr/local/bin/kwok /usr/local/bin/kwokctl
 
+      - name: Seed + verify the small cluster, then tear down
+        run: |
+          make seed-small
+          bash .dev/ci-verify-cluster.sh kubeatlas-test-small 5
+          make teardown-small
+
       - name: Seed + verify the incident cluster, then tear down
         run: |
           make seed-large-incident
-          kubectl --context kubeatlas-test-large-incident get pods -A --no-headers | wc -l | grep -qvx 0 \
-            && echo "✓ incident cluster has pods"
+          bash .dev/ci-verify-cluster.sh kubeatlas-test-large-incident 20
           make teardown-large-incident
 
       - name: Seed + verify the prod cluster, then tear down
         run: |
           make seed-large-prod
-          kubectl --context kubeatlas-test-large-prod get nodes --no-headers | wc -l
+          bash .dev/ci-verify-cluster.sh kubeatlas-test-large-prod 100
           make teardown-large-prod

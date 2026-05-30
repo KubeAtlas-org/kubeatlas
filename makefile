@@ -10,11 +10,10 @@ BUILD_OS   ?= $(shell go env GOOS)
 BUILD_ARCH ?= $(shell go env GOARCH)
 
 .EXPORT_ALL_VARIABLES:
-.PHONY: help lint lint-fix run stop build clean dev dev-down release-snapshot brand-png \
-        seed-large-prod seed-large-incident teardown-large-prod teardown-large-incident
+.PHONY: help lint lint-fix run stop build clean release-snapshot brand-png \
+        seed-small seed-large-prod seed-large-incident \
+        teardown-small teardown-large-prod teardown-large-incident
 
-# Name of the throwaway KWOK cluster used by `make dev`.
-DEV_CLUSTER ?= kubeatlas-dev
 .DEFAULT_GOAL := help
 
 help: ## 💬 This help message :)
@@ -62,26 +61,21 @@ stop: ## 🛑 Stop THIS repo's dev server (air + tmp/main); clusters untouched
 	  done; \
 	fi
 
-dev: ## 🧪 Bring up a KWOK cluster and run the dev server (zero host setup)
+seed-small: ## 🌱 Provision kubeatlas-test-small (kwok, minimal ~2n/7p — lightweight UI driver)
 	@figlet $@ || true
-	@# kwokctl's binary runtime runs etcd + apiserver + kwok as local processes —
-	@# no Docker-in-Docker — so this works inside the devcontainer or on the host.
-	@kwokctl get clusters 2>/dev/null | grep -qx "$(DEV_CLUSTER)" \
-	  || kwokctl create cluster --runtime binary --name "$(DEV_CLUSTER)"
-	@kubectl config use-context "kwok-$(DEV_CLUSTER)" >/dev/null
-	@$(MAKE) run
+	@bash .dev/seed-small.sh
 
-dev-down: ## 🧹 Delete the KWOK dev cluster
-	@figlet $@ || true
-	@kwokctl delete cluster --name "$(DEV_CLUSTER)" 2>/dev/null || true
-
-seed-large-prod: ## 🏭 Provision kubeatlas-test-large-prod (kwok, realistic ~19n/190p)
+seed-large-prod: ## 🏭 Provision kubeatlas-test-large-prod (kwok, realistic ~19n/130p)
 	@figlet $@ || true
 	@bash .dev/seed-large-prod.sh
 
 seed-large-incident: ## 🔥 Provision kubeatlas-test-large-incident (kwok, ~6n/28p broken — diagnostic demo)
 	@figlet $@ || true
 	@bash .dev/seed-large-incident.sh
+
+teardown-small: ## ❌ Tear down kubeatlas-test-small
+	@figlet $@ || true
+	@bash .dev/teardown-small.sh
 
 teardown-large-prod: ## ❌ Tear down kubeatlas-test-large-prod
 	@figlet $@ || true

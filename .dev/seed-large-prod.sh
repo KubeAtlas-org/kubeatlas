@@ -6,10 +6,10 @@
 # namespaces, and all four KubeAtlas edge types. Everything is STABLE — kwok's
 # default stage pins pods Running with no flapping, safe to drive live.
 #
-# This is the realistic-cluster driver. For raw scale/perf use seed-large-perf.sh;
+# This is the realistic-cluster driver. For a minimal cluster use seed-small.sh;
 # for the broken-cluster diagnostic story use seed-large-incident.sh.
 #
-# ~19 nodes, ~180 pods, ~500 resources. Idempotent.
+# ~19 nodes, ~130 pods, ~500 resources. Idempotent.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -140,7 +140,7 @@ ALL_TOL="{ operator: Exists }"  # DaemonSets tolerate everything (incl. control-
 
 # ============================================================================
 # Reusable emitters. Heterogeneity comes from varied arguments, not from a
-# uniform grid — that is the whole point vs. seed-large-perf.
+# uniform grid — that is the whole point of this realistic driver.
 # ============================================================================
 
 # A standard stateless app: SA + ConfigMap + Secret + Deployment + Service.
