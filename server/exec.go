@@ -116,6 +116,7 @@ func (s *KubeatlasAPI) handleExec(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Read WebSocket frames until the connection closes or exec finishes
+readLoop:
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -130,7 +131,7 @@ func (s *KubeatlasAPI) handleExec(w http.ResponseWriter, r *http.Request) {
 		case frameData:
 			if len(msg) > 1 {
 				if _, err := pipeW.Write(msg[1:]); err != nil {
-					break
+					break readLoop // stdin pipe closed; exec is done
 				}
 			}
 

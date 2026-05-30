@@ -89,13 +89,13 @@ func parseConfig(getenv func(string) string) Config {
 		logLevel = "debug"
 	}
 
-	if s := os.Getenv("LOG_LEVEL"); s != "" {
+	if s := getenv("LOG_LEVEL"); s != "" {
 		logLevel = s
 	}
 
 	logFormat := "text"
 
-	if s := os.Getenv("LOG_FORMAT"); s != "" {
+	if s := getenv("LOG_FORMAT"); s != "" {
 		logFormat = s
 	}
 
