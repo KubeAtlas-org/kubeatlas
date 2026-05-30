@@ -3,7 +3,7 @@
 # broken in one clearly-named way per failure mode. Every bad state is pinned
 # by a kwok Stage (see kwok/incident-stages.yaml) keyed off a label, so it is
 # deterministic and will NOT self-heal mid-demo — point at the red, it stays
-# red. ~6 nodes (1 NotReady), ~50 pods. The diagnostic-story demo driver.
+# red. ~6 nodes (1 NotReady), ~28 pods. The diagnostic-story demo driver.
 # Idempotent.
 set -euo pipefail
 

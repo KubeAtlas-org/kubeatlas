@@ -2,7 +2,7 @@
   "name": "KubeAtlas",
   "build": { "dockerfile": "Dockerfile" },
 
-  // Live dev server. `make dev` brings up an in-container KWOK cluster and runs air.
+  // Live dev server. `make seed-small` brings up an in-container KWOK cluster; `make run` runs air.
   "forwardPorts": [8000],
   "portsAttributes": {
     "8000": { "label": "KubeAtlas", "onAutoForward": "notify" }

@@ -101,7 +101,7 @@ func parseConfig(getenv func(string) string) Config {
 
 	staticDir := getenv("STATIC_DIR")
 
-	// KUBEATLAS_DEV marks the dev loop (set by `make run`/`make dev`). It flips
+	// KUBEATLAS_DEV marks the dev loop (set by `make run`). It flips
 	// the end-user UX conveniences off — auto-opening a tab and the single-instance
 	// guard both fight air's restart-on-edit. It does NOT change how the app
 	// behaves otherwise; STATIC_DIR independently controls asset source.
